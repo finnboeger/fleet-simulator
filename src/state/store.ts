@@ -122,7 +122,7 @@ export const useAppStore = create<AppState>()(
             simulation,
             playback: {
               isPlaying: true,
-              speedMultiplier: 60,
+              speedMultiplier: get().playback.speedMultiplier,
               currentTimeSec: simulation.timelineStartSeconds,
             },
           });
