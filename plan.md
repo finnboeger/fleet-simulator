@@ -3,41 +3,41 @@
 Build a TypeScript web app that simulates and visualizes fleet progress on a windward-leeward course using envelope trajectories (first, bulk, last + side limits) rather than individual boats. Use a deterministic simulation core decoupled from rendering. Start with React + Vite + PixiJS for smooth 2D timeline animation and gradient area rendering.
 
 **Steps**
-1. Phase 1: Project setup and architecture baseline
-1. Initialize a TypeScript React app with Vite and strict compiler settings. Define module boundaries between simulation core and UI/rendering to keep logic testable. 
-1. Add core libraries first: React, Zustand, PixiJS, and a schema validator (Zod) for user input validation. 
-1. Configure testing (Vitest + Testing Library) and linting (ESLint + TypeScript rules) so simulation math and config parsing are validated from the start.
+1. ✅ Phase 1: Project setup and architecture baseline
+1. ✅ Initialize a TypeScript React app with Vite and strict compiler settings. Define module boundaries between simulation core and UI/rendering to keep logic testable. 
+1. ✅ Add core libraries first: React, Zustand, PixiJS, and a schema validator (Zod) for user input validation. 
+1. ✅ Configure testing (Vitest + Testing Library) and linting (ESLint + TypeScript rules) so simulation math and config parsing are validated from the start.
 
-1. Phase 2: Domain model and configuration schema
-1. Define race configuration types: beat length, laps, offset distance (default 80m), start-to-gate distance (default 150m), wind speed, and fleets with class/spread/start delay/color.
-1. Define boat class performance table model loaded from `src/data/classes/[classname].json` using each file's `speeds` entry.
-1. Parse `speeds` keys that can be either a single value (for example `"5"`) or a range (for example `"5..8"`); normalize range keys to their lower bound so `"5..8"` maps to windspeed `5`.
-1. Implement defaults and normalization rules:
+1. ✅ Phase 2: Domain model and configuration schema
+1. ✅ Define race configuration types: beat length, laps, offset distance (default 80m), start-to-gate distance (default 150m), wind speed, and fleets with class/spread/start delay/color.
+1. ✅ Define boat class performance table model loaded from `src/data/classes/[classname].json` using each file's `speeds` entry.
+1. ✅ Parse `speeds` keys that can be either a single value (for example `"5"`) or a range (for example `"5..8"`); normalize range keys to their lower bound so `"5..8"` maps to windspeed `5`.
+1. ✅ Implement defaults and normalization rules:
 - If upwind angle missing, use 45 degrees.
 - If downwind angle missing, use 170 degrees.
 - If bulk slowdown missing, compute as one-third of the last-boat slowdown.
 - Enforce start delay as integer minutes >= 0.
-1. Restrict user-entered wind speed to a minimum of 4 kn and a maximum of 20 kn.
-1. If requested wind speed is not present in the class table, linearly interpolate between the closest known speeds.
-1. If requested wind speed is below the smallest known class speed, clamp to the smallest known speed value.
-1. If requested wind speed is above the largest known class speed, clamp to the largest known speed value.
+1. ✅ Restrict user-entered wind speed to a minimum of 4 kn and a maximum of 20 kn.
+1. ✅ If requested wind speed is not present in the class table, linearly interpolate between the closest known speeds.
+1. ✅ If requested wind speed is below the smallest known class speed, clamp to the smallest known speed value.
+1. ✅ If requested wind speed is above the largest known class speed, clamp to the largest known speed value.
 
-1. Phase 3: Course geometry and leg progression engine
-1. Implement windward-leeward geometry generator with fixed up-screen wind direction and computed mark coordinates from beat length.
-1. Build leg progression state machine for envelope tracks:
+1. ✅ Phase 3: Course geometry and leg progression engine
+1. ✅ Implement windward-leeward geometry generator with fixed up-screen wind direction and computed mark coordinates from beat length.
+1. ✅ Build leg progression state machine for envelope tracks:
 - Start area to leeward gate
 - Upwind to windward mark
 - Offset leg
 - Downwind to leeward gate
 - Repeat for laps
 - Final downwind finish
-1. Convert VMG to course-axis speed per leg using corresponding angle assumptions for boundary projection logic.
-1. Implement start procedure timing model (fixed 5-minute sequence) and derive each fleet race start from cumulative procedure offsets.
+1. ✅ Convert VMG to course-axis speed per leg using corresponding angle assumptions for boundary projection logic.
+1. ✅ Implement start procedure timing model (fixed 5-minute sequence) and derive each fleet race start from cumulative procedure offsets.
 
-1. Phase 4: Envelope simulation (first/bulk/last + side limits)
-1. Represent each fleet with three primary trajectories (first, bulk, last), each with its own pace multiplier from slowdown percentages.
-1. Simulate trajectories over time with a fixed step (for example 1 second), producing position samples for each timeline timestamp.
-1. Compute left/right side limits per leg based on your rule:
+1. ✅ Phase 4: Envelope simulation (first/bulk/last + side limits)
+1. ✅ Represent each fleet with three primary trajectories (first, bulk, last), each with its own pace multiplier from slowdown percentages.
+1. ✅ Simulate trajectories over time with a fixed step (for example 1 second), producing position samples for each timeline timestamp.
+1. ✅ Compute left/right side limits per leg based on your rule:
 - At leg entry, project two reachable boundary paths if a boat immediately chooses left or right and tacks/gybes once at halfway distance.
 - Use class upwind/downwind angle for that leg.
 1. Build polygon/envelope slices for rendering, with gradient intensity profile:
