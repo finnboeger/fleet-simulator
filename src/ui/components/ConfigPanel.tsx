@@ -1,10 +1,20 @@
+import { useState, type DragEvent } from 'react';
 import type { FleetConfig } from '../../simulation/types.js';
 import { useAppStore, AVAILABLE_CLASSES } from '../../state/store.js';
 
 export function ConfigPanel() {
   const config = useAppStore((s) => s.config);
-  const { updateConfig, addFleet, removeFleet, updateFleet, refreshSimulation, resetToDefault } =
+  const { updateConfig, addFleet, moveFleet, removeFleet, updateFleet, refreshSimulation, resetToDefault } =
     useAppStore();
+  const [draggedFleetId, setDraggedFleetId] = useState<string | null>(null);
+  const [dragOverFleetId, setDragOverFleetId] = useState<string | null>(null);
+
+  const moveById = (fromId: string, toId: string) => {
+    const fromIndex = config.fleets.findIndex((f) => f.id === fromId);
+    const toIndex = config.fleets.findIndex((f) => f.id === toId);
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+    moveFleet(fromIndex, toIndex);
+  };
 
   return (
     <aside className="config-panel">
@@ -96,6 +106,27 @@ export function ConfigPanel() {
           <FleetRow
             key={fleet.id}
             fleet={fleet}
+            isDragging={draggedFleetId === fleet.id}
+            isDragOver={dragOverFleetId === fleet.id && draggedFleetId !== fleet.id}
+            onDragStart={() => setDraggedFleetId(fleet.id)}
+            onDragEnd={() => {
+              setDraggedFleetId(null);
+              setDragOverFleetId(null);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (draggedFleetId && draggedFleetId !== fleet.id) {
+                setDragOverFleetId(fleet.id);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (draggedFleetId && draggedFleetId !== fleet.id) {
+                moveById(draggedFleetId, fleet.id);
+              }
+              setDraggedFleetId(null);
+              setDragOverFleetId(null);
+            }}
             onUpdate={(u) => updateFleet(fleet.id, u)}
             onRemove={() => removeFleet(fleet.id)}
           />
@@ -117,16 +148,36 @@ export function ConfigPanel() {
 
 function FleetRow({
   fleet,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
   onUpdate,
   onRemove,
 }: {
   fleet: FleetConfig;
+  isDragging: boolean;
+  isDragOver: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDragOver: (e: DragEvent<HTMLDivElement>) => void;
+  onDrop: (e: DragEvent<HTMLDivElement>) => void;
   onUpdate: (u: Partial<FleetConfig>) => void;
   onRemove: () => void;
 }) {
   return (
-    <div className="fleet-row">
+    <div
+      className={`fleet-row${isDragging ? ' is-dragging' : ''}${isDragOver ? ' is-drag-over' : ''}`}
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
       <div className="fleet-row-header">
+        <span className="drag-handle" title="Drag to reorder" aria-hidden="true">⋮⋮</span>
         <input
           type="color"
           value={fleet.color}

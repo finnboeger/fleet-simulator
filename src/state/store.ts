@@ -49,6 +49,7 @@ interface AppState {
 
   updateConfig: (updates: Partial<Omit<RaceConfig, 'fleets'>>) => void;
   addFleet: (className?: string) => void;
+  moveFleet: (fromIndex: number, toIndex: number) => void;
   removeFleet: (id: string) => void;
   updateFleet: (id: string, updates: Partial<FleetConfig>) => void;
   refreshSimulation: () => void;
@@ -80,6 +81,24 @@ export const useAppStore = create<AppState>()(
         };
         set((s) => ({ config: { ...s.config, fleets: [...s.config.fleets, fleet] } }));
       },
+
+      moveFleet: (fromIndex, toIndex) =>
+        set((s) => {
+          const fleets = [...s.config.fleets];
+          if (
+            fromIndex < 0 ||
+            toIndex < 0 ||
+            fromIndex >= fleets.length ||
+            toIndex >= fleets.length ||
+            fromIndex === toIndex
+          ) {
+            return s;
+          }
+
+          const [moved] = fleets.splice(fromIndex, 1);
+          fleets.splice(toIndex, 0, moved);
+          return { config: { ...s.config, fleets } };
+        }),
 
       removeFleet: (id) =>
         set((s) => ({
