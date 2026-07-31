@@ -9,6 +9,13 @@ function fmt(sec: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+function fmtDurationMinSec(sec: number): string {
+  const totalSeconds = Math.max(0, Math.round(sec));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 const SPEEDS = [30, 60, 120, 180, 240];
 
 export function Timeline() {
@@ -87,13 +94,17 @@ export function Timeline() {
               const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
               if (!env || duration === 0) return null;
               const pct = ((env.firstFinishSeconds - timelineStart) / duration) * 100;
+              const raceDuration = env.firstFinishSeconds - env.raceStartSeconds;
               return (
                 <div
                   key={`${fleet.id}-finish`}
-                  className="finish-marker"
-                  style={{ left: `${pct}%`, background: fleet.color }}
+                  className="finish-marker-group"
+                  style={{ left: `${pct}%` }}
                   title={`${fleet.className} first finish: ${fmt(env.firstFinishSeconds)}`}
-                />
+                >
+                  <div className="finish-duration-bubble">🏁 {fmtDurationMinSec(raceDuration)}</div>
+                  <div className="finish-marker" style={{ background: fleet.color }} />
+                </div>
               );
             })}
 

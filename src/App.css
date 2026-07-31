@@ -291,16 +291,35 @@ button.primary:hover:not(:disabled) {
   z-index: 1;
 }
 
-.finish-marker {
+.finish-marker-group {
   position: absolute;
-  width: 9px;
-  height: 9px;
-  top: 11px;
-  border-radius: 999px;
-  border: 2px solid #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   pointer-events: none;
   z-index: 2;
+}
+
+.finish-marker {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 2px solid #fff;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.finish-duration-bubble {
+  position: absolute;
+  bottom: 20px;
+  background: rgba(17 24 39 / 0.92);
+  color: #fff;
+  border: 1px solid rgba(255 255 255 / 0.18);
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  line-height: 1.2;
+  font-family: monospace;
+  white-space: nowrap;
 }
 
 .time-display {
