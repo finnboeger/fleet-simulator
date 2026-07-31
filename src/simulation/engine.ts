@@ -2,27 +2,33 @@ import type { ClassPerformance, RaceConfig, SimulationOutput } from './types.js'
 import { buildCourseGeometry } from './course.js';
 import { simulateFleetEnvelope } from './envelope.js';
 import { clampWindSpeed } from './performance.js';
-import { fleetRaceStartSeconds } from './progression.js';
+import { fleetRaceStartSeconds, START_SEQUENCE_SECONDS } from './progression.js';
 
-/**
- * Run a full deterministic simulation for all fleets in the race config.
- *
- * @param config  The race configuration.
- * @param classPerformances  Pre-loaded and parsed class performance tables
- *                           keyed by class name.
- */
+let _cache: { key: string; output: SimulationOutput } | null = null;
+
 export function runSimulation(
+  config: RaceConfig,
+  classPerformances: Map<string, ClassPerformance>,
+): SimulationOutput {
+  const key = JSON.stringify(config);
+  if (_cache?.key === key) return _cache.output;
+  const output = compute(config, classPerformances);
+  _cache = { key, output };
+  return output;
+}
+
+function compute(
   config: RaceConfig,
   classPerformances: Map<string, ClassPerformance>,
 ): SimulationOutput {
   const geometry = buildCourseGeometry(config);
   const windKnots = clampWindSpeed(config.windSpeedKnots);
 
-  // Total sim duration = latest race start + generous buffer for slowest fleet to finish.
-  const maxRaceStart = Math.max(
-    ...config.fleets.map((f) => fleetRaceStartSeconds(f.startDelayMinutes)),
-  );
-  // Rough upper bound: 6 hours from the last race start.
+  const maxRaceStart =
+    config.fleets.length > 0
+      ? Math.max(...config.fleets.map((f) => fleetRaceStartSeconds(f.startDelayMinutes)))
+      : START_SEQUENCE_SECONDS;
+  // 6 hours past the last race start is a safe upper bound
   const totalSec = maxRaceStart + 6 * 3600;
 
   const fleets = config.fleets.map((fleet) => {

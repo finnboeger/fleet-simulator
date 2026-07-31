@@ -40,22 +40,22 @@ Build a TypeScript web app that simulates and visualizes fleet progress on a win
 1. ✅ Compute left/right side limits per leg based on your rule:
 - At leg entry, project two reachable boundary paths if a boat immediately chooses left or right and tacks/gybes once at halfway distance.
 - Use class upwind/downwind angle for that leg.
-1. Build polygon/envelope slices for rendering, with gradient intensity profile:
+1. ✅ Build polygon/envelope slices for rendering, with gradient intensity profile:
 - 100% saturation at bulk trajectory
 - 50% saturation at first and last limits
-1. Cache per-fleet simulation outputs and invalidate only when dependent inputs change.
+1. ✅ Cache per-fleet simulation outputs and invalidate only when dependent inputs change.
 
-1. Phase 5: Visualization and interaction
-1. Build a PixiJS scene with layers: course marks/lines, envelope fills, first/last boundary lines, and optional bulk centerline.
-1. Implement timeline UI below the diagram with play/pause, speed control, and visible markers for each fleet starting procedure and race start.
-1. Add synchronized time cursor that drives rendered sample selection.
-1. Implement fleet color defaults with non-reuse rotation until palette exhaustion; preserve manual overrides.
-1. Add responsive layout for desktop and mobile (canvas scaling + control panel stacking).
+1. ✅ Phase 5: Visualization and interaction
+1. ✅ Build a PixiJS scene with layers: course marks/lines, envelope fills, first/last boundary lines, and optional bulk centerline.
+1. ✅ Implement timeline UI below the diagram with play/pause, speed control, and visible markers for each fleet starting procedure and race start.
+1. ✅ Add synchronized time cursor that drives rendered sample selection.
+1. ✅ Implement fleet color defaults with non-reuse rotation until palette exhaustion; preserve manual overrides.
+1. ✅ Add responsive layout for desktop and mobile (canvas scaling + control panel stacking).
 
-1. Phase 6: Input UX and data management
-1. Create forms for race config and fleet list with validation and sensible defaults.
-1. Create class-data loading/parsing for `src/data/classes/[classname].json` with normalized speed keys and interpolation-ready lookup maps.
-1. Persist scenario state locally (localStorage) and provide reset-to-default scenario.
+1. ✅ Phase 6: Input UX and data management
+1. ✅ Create forms for race config and fleet list with validation and sensible defaults.
+1. ✅ Create class-data loading/parsing for `src/data/classes/[classname].json` with normalized speed keys and interpolation-ready lookup maps.
+1. ✅ Persist scenario state locally (localStorage) and provide reset-to-default scenario.
 
 1. Phase 7: Quality hardening and release readiness
 1. Add unit tests for interpolation, defaulting behavior, leg timing, start offset handling, and side-boundary geometry.
