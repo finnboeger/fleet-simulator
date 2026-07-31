@@ -170,11 +170,15 @@ function drawLegOutline(
 function buildLegOutlinePolygon(scene: Scene, spec: LegOutlineSpec): Point[] {
   const startCenter = scene.simToScreen(spec.start);
   const endCenter = scene.simToScreen(spec.end);
+  const scale = scene.transform.scale;
 
-  const startLeft = { x: startCenter.x - spec.startHalfWidth, y: startCenter.y };
-  const startRight = { x: startCenter.x + spec.startHalfWidth, y: startCenter.y };
-  const endLeft = { x: endCenter.x - spec.endHalfWidth, y: endCenter.y };
-  const endRight = { x: endCenter.x + spec.endHalfWidth, y: endCenter.y };
+  const startHalfWidthPx = spec.startHalfWidth * scale;
+  const endHalfWidthPx = spec.endHalfWidth * scale;
+
+  const startLeft = { x: startCenter.x - startHalfWidthPx, y: startCenter.y };
+  const startRight = { x: startCenter.x + startHalfWidthPx, y: startCenter.y };
+  const endLeft = { x: endCenter.x - endHalfWidthPx, y: endCenter.y };
+  const endRight = { x: endCenter.x + endHalfWidthPx, y: endCenter.y };
 
   const lowerLeftCorner = rayIntersection(
     startLeft,
