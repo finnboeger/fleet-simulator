@@ -27,6 +27,16 @@ describe('buildCourseGeometry', () => {
     expect(geometry.windwardMark.y).toBe(150 + 1852);
     expect(geometry.offsetMark.x).toBeLessThan(0);
     expect(geometry.legs.map((leg) => leg.type)).toEqual(['upwind', 'offset', 'finish']);
+    expect(geometry.legs[0].start).toEqual(geometry.startLine);
+  });
+
+  it('starts first upwind at start line and later upwinds at leeward gate', () => {
+    const geometry = buildCourseGeometry({ ...DEFAULT_CONFIG, laps: 2 });
+
+    const upwindLegs = geometry.legs.filter((leg) => leg.type === 'upwind');
+    expect(upwindLegs).toHaveLength(2);
+    expect(upwindLegs[0].start).toEqual(geometry.startLine);
+    expect(upwindLegs[1].start).toEqual(geometry.leewardGate);
   });
 });
 

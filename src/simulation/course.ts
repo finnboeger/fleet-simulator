@@ -50,7 +50,7 @@ export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
     const isLastLap = lap === laps - 1;
 
     // Upwind
-    addLeg('upwind', leewardGate, windwardMark);
+    addLeg('upwind', lap === 0 ? startLine : leewardGate, windwardMark);
 
     // Offset leg (only if not the final lap's finish sequence)
     addLeg('offset', windwardMark, offsetMark);

@@ -28,9 +28,11 @@ export function CourseCanvas() {
     scene.clear();
     scene.renderCourse(geometry);
 
-    if (sim && liveConfig.showOutline) {
+    if (sim) {
       for (const fleetEnv of sim.fleets) {
-        layersRef.current.get(fleetEnv.fleetId)?.draw(scene, fleetEnv, playback.currentTimeSec);
+        layersRef.current
+          .get(fleetEnv.fleetId)
+          ?.draw(scene, fleetEnv, playback.currentTimeSec, liveConfig.showOutline);
       }
     }
   }, []);

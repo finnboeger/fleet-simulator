@@ -19,6 +19,7 @@ type LegOutlineSpec = {
   endHalfWidth: number;
   angleDeg: number;
   travel: 'up' | 'down';
+  fillCut: 'axis' | 'horizontal';
 };
 
 export class EnvelopeLayer {
@@ -30,16 +31,52 @@ export class EnvelopeLayer {
 
   renderHistory(_envelope: FleetEnvelope, _scene: Scene): void {}
 
-  draw(scene: Scene, _envelope: FleetEnvelope, _timeSec: number): void {
+  draw(scene: Scene, _envelope: FleetEnvelope, _timeSec: number, showOutline = true): void {
     const geometry = scene.geometry;
     if (!geometry) return;
 
     const specs = buildLegSpecs(geometry, _envelope.upwindAngle, _envelope.downwindAngle);
     const { ctx } = scene;
 
-    specs.forEach((spec, index) => {
-      drawLegOutline(ctx, scene, spec, toRgba(this.colorInt, index % 2 === 0 ? 0.85 : 0.65));
-    });
+    const firstTrack = _envelope.tracks.find((track) => track.role === 'first');
+    const lastTrack = _envelope.tracks.find((track) => track.role === 'last');
+
+    if (firstTrack && lastTrack) {
+      const firstPoint = sampleTrackPointAtTime(firstTrack.points, _timeSec);
+      const lastPoint = sampleTrackPointAtTime(lastTrack.points, _timeSec);
+
+      if (firstPoint && lastPoint) {
+        const fillStyle = toRgba(this.colorInt, 0.16);
+        const legCount = Math.min(specs.length, geometry.legs.length);
+
+        for (let legIndex = 0; legIndex < legCount; legIndex++) {
+          const span = legSpanForTrackPoints(legIndex, firstPoint, lastPoint);
+          if (!span) continue;
+
+          const spec = specs[legIndex];
+          const polygon = buildLegOutlinePolygon(scene, spec);
+          const start = scene.simToScreen(spec.start);
+          const end = scene.simToScreen(spec.end);
+
+          fillLegProgressBand(
+            ctx,
+            polygon,
+            start,
+            end,
+            span.followerProgress,
+            span.leaderProgress,
+            spec.fillCut,
+            fillStyle,
+          );
+        }
+      }
+    }
+
+    if (showOutline) {
+      specs.forEach((spec, index) => {
+        drawLegOutline(ctx, scene, spec, toRgba(this.colorInt, index % 2 === 0 ? 0.85 : 0.65));
+      });
+    }
   }
 
   destroy(): void {}
@@ -60,6 +97,7 @@ function buildLegSpecs(
       endHalfWidth: 0,
       angleDeg: upwindAngle,
       travel: 'up',
+      fillCut: 'axis',
     },
   ];
 
@@ -72,6 +110,7 @@ function buildLegSpecs(
       endHalfWidth: 0,
       angleDeg: 75,
       travel: 'down',
+      fillCut: 'axis',
     });
 
     if (lap < laps) {
@@ -83,6 +122,7 @@ function buildLegSpecs(
         endHalfWidth: -GATE_HALF_WIDTH,
         angleDeg: downwindAngle,
         travel: 'down',
+        fillCut: 'horizontal',
       });
 
       specs.push({
@@ -93,6 +133,7 @@ function buildLegSpecs(
         endHalfWidth: 0,
         angleDeg: upwindAngle,
         travel: 'up',
+        fillCut: 'axis',
       });
     } else {
       specs.push({
@@ -103,6 +144,7 @@ function buildLegSpecs(
         endHalfWidth: -START_LINE_HALF_WIDTH,
         angleDeg: downwindAngle,
         travel: 'down',
+        fillCut: 'horizontal',
       });
     }
   }
@@ -116,6 +158,16 @@ function drawLegOutline(
   spec: LegOutlineSpec,
   strokeStyle: string,
 ): void {
+  const points = buildLegOutlinePolygon(scene, spec);
+  pathPolygon(ctx, points);
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+function buildLegOutlinePolygon(scene: Scene, spec: LegOutlineSpec): Point[] {
   const startCenter = scene.simToScreen(spec.start);
   const endCenter = scene.simToScreen(spec.end);
 
@@ -137,7 +189,7 @@ function drawLegOutline(
     rayDirection(spec.angleDeg, spec.travel, 'right', 'end'),
   );
 
-  const points = [
+  return [
     startLeft,
     lowerLeftCorner,
     endLeft,
@@ -145,16 +197,188 @@ function drawLegOutline(
     lowerRightCorner,
     startRight,
   ];
+}
 
+function pathPolygon(ctx: CanvasRenderingContext2D, points: Point[]): void {
+  if (points.length === 0) return;
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
   for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
   ctx.closePath();
-  ctx.strokeStyle = strokeStyle;
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.stroke();
+}
+
+function fillLegProgressBand(
+  ctx: CanvasRenderingContext2D,
+  polygon: Point[],
+  start: Point,
+  end: Point,
+  followerProgress: number,
+  leaderProgress: number,
+  fillCut: 'axis' | 'horizontal',
+  fillStyle: string,
+): void {
+  if (polygon.length < 3) return;
+
+  let clipped: Point[];
+
+  if (fillCut === 'horizontal') {
+    const followerY = start.y + (end.y - start.y) * clamp01(followerProgress);
+    const leaderY = start.y + (end.y - start.y) * clamp01(leaderProgress);
+    const minY = Math.min(followerY, leaderY);
+    const maxY = Math.max(followerY, leaderY);
+    if (maxY - minY <= 1e-4) return;
+
+    clipped = clipPolygonByMinY(polygon, minY);
+    clipped = clipPolygonByMaxY(clipped, maxY);
+  } else {
+    const axis = sub(end, start);
+    const axisLen = length(axis);
+    if (axisLen < 1e-6) return;
+
+    const axisUnit = scale(axis, 1 / axisLen);
+    const minS = clamp01(followerProgress) * axisLen;
+    const maxS = clamp01(leaderProgress) * axisLen;
+    if (maxS - minS <= 1e-4) return;
+
+    clipped = clipPolygonByMinS(polygon, start, axisUnit, minS);
+    clipped = clipPolygonByMaxS(clipped, start, axisUnit, maxS);
+  }
+
+  if (clipped.length < 3) return;
+
+  ctx.save();
+  pathPolygon(ctx, clipped);
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+  ctx.restore();
+}
+
+function clipPolygonByMinY(polygon: Point[], minY: number): Point[] {
+  return clipPolygonHalfPlane(polygon, (p) => p.y >= minY - 1e-9, (a, b) => {
+    const t = (minY - a.y) / (b.y - a.y);
+    return lerpPoint(a, b, t);
+  });
+}
+
+function clipPolygonByMaxY(polygon: Point[], maxY: number): Point[] {
+  return clipPolygonHalfPlane(polygon, (p) => p.y <= maxY + 1e-9, (a, b) => {
+    const t = (maxY - a.y) / (b.y - a.y);
+    return lerpPoint(a, b, t);
+  });
+}
+
+function legSpanForTrackPoints(
+  legIndex: number,
+  firstPoint: FleetEnvelope['tracks'][number]['points'][number],
+  lastPoint: FleetEnvelope['tracks'][number]['points'][number],
+): { followerProgress: number; leaderProgress: number } | null {
+  const leaderProgress = progressOnLeg(legIndex, firstPoint);
+  const followerProgress = progressOnLeg(legIndex, lastPoint);
+
+  // Once the follower has rounded the mark at leg end, this leg is done.
+  if (followerProgress >= 1 - 1e-6) return null;
+  if (leaderProgress <= followerProgress + 1e-6) return null;
+
+  return { followerProgress, leaderProgress };
+}
+
+function progressOnLeg(
+  legIndex: number,
+  point: FleetEnvelope['tracks'][number]['points'][number],
+): number {
+  if (point.legIndex < legIndex) return 0;
+  if (point.legIndex > legIndex) return 1;
+  return clamp01(point.legProgress);
+}
+
+function clipPolygonByMinS(
+  polygon: Point[],
+  origin: Point,
+  axisUnit: Vec,
+  minS: number,
+): Point[] {
+  return clipPolygonHalfPlane(polygon, (p) => dot(sub(p, origin), axisUnit) >= minS - 1e-9, (a, b) => {
+    const sa = dot(sub(a, origin), axisUnit);
+    const sb = dot(sub(b, origin), axisUnit);
+    const t = (minS - sa) / (sb - sa);
+    return lerpPoint(a, b, t);
+  });
+}
+
+function clipPolygonByMaxS(
+  polygon: Point[],
+  origin: Point,
+  axisUnit: Vec,
+  maxS: number,
+): Point[] {
+  return clipPolygonHalfPlane(polygon, (p) => dot(sub(p, origin), axisUnit) <= maxS + 1e-9, (a, b) => {
+    const sa = dot(sub(a, origin), axisUnit);
+    const sb = dot(sub(b, origin), axisUnit);
+    const t = (maxS - sa) / (sb - sa);
+    return lerpPoint(a, b, t);
+  });
+}
+
+function clipPolygonHalfPlane(
+  polygon: Point[],
+  inside: (p: Point) => boolean,
+  intersect: (a: Point, b: Point) => Point,
+): Point[] {
+  if (polygon.length === 0) return [];
+
+  const output: Point[] = [];
+  let prev = polygon[polygon.length - 1];
+  let prevInside = inside(prev);
+
+  for (const curr of polygon) {
+    const currInside = inside(curr);
+
+    if (currInside) {
+      if (!prevInside) output.push(intersect(prev, curr));
+      output.push(curr);
+    } else if (prevInside) {
+      output.push(intersect(prev, curr));
+    }
+
+    prev = curr;
+    prevInside = currInside;
+  }
+
+  return output;
+}
+
+function lerpPoint(a: Point, b: Point, t: number): Point {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+function dot(a: Vec, b: Vec): number {
+  return a.x * b.x + a.y * b.y;
+}
+
+function sub(a: Vec, b: Vec): Vec {
+  return { x: a.x - b.x, y: a.y - b.y };
+}
+
+function scale(v: Vec, k: number): Vec {
+  return { x: v.x * k, y: v.y * k };
+}
+
+function length(v: Vec): number {
+  return Math.hypot(v.x, v.y);
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function sampleTrackPointAtTime(
+  points: FleetEnvelope['tracks'][number]['points'],
+  timeSec: number,
+): FleetEnvelope['tracks'][number]['points'][number] | null {
+  if (points.length === 0) return null;
+  const rounded = Math.round(timeSec);
+  const idx = Math.max(0, Math.min(points.length - 1, rounded));
+  return points[idx];
 }
 
 function rayDirection(
