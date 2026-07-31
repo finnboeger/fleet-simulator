@@ -18,6 +18,7 @@ export class Scene {
   get isReady(): boolean { return this._ready; }
   get transform(): ViewTransform { return this._transform; }
   get ctx(): CanvasRenderingContext2D { return this._ctx; }
+  get geometry(): CourseGeometry | null { return this._geometry; }
 
   init(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
