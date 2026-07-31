@@ -4,7 +4,7 @@ import { useAppStore, AVAILABLE_CLASSES } from '../../state/store.js';
 
 export function ConfigPanel() {
   const config = useAppStore((s) => s.config);
-  const { updateConfig, addFleet, moveFleet, removeFleet, updateFleet, refreshSimulation, resetToDefault } =
+  const { clearFleetCustomLaps, updateConfig, addFleet, moveFleet, removeFleet, updateFleet, refreshSimulation, resetToDefault } =
     useAppStore();
   const [draggedFleetId, setDraggedFleetId] = useState<string | null>(null);
   const [dragOverFleetId, setDragOverFleetId] = useState<string | null>(null);
@@ -126,6 +126,7 @@ export function ConfigPanel() {
           <FleetRow
             key={fleet.id}
             fleet={fleet}
+            defaultLaps={config.laps}
             isDragging={draggedFleetId === fleet.id}
             isDragOver={dragOverFleetId === fleet.id && draggedFleetId !== fleet.id}
             onDragStart={() => setDraggedFleetId(fleet.id)}
@@ -148,6 +149,7 @@ export function ConfigPanel() {
               setDragOverFleetId(null);
             }}
             showAlternateTopMark={config.hasAlternateTopMark}
+            onClearCustomLaps={() => clearFleetCustomLaps(fleet.id)}
             onUpdate={(u) => updateFleet(fleet.id, u)}
             onRemove={() => removeFleet(fleet.id)}
           />
@@ -169,6 +171,7 @@ export function ConfigPanel() {
 
 function FleetRow({
   fleet,
+  defaultLaps,
   isDragging,
   isDragOver,
   onDragStart,
@@ -176,10 +179,12 @@ function FleetRow({
   onDragOver,
   onDrop,
   showAlternateTopMark,
+  onClearCustomLaps,
   onUpdate,
   onRemove,
 }: {
   fleet: FleetConfig;
+  defaultLaps: number;
   isDragging: boolean;
   isDragOver: boolean;
   onDragStart: () => void;
@@ -187,6 +192,7 @@ function FleetRow({
   onDragOver: (e: DragEvent<HTMLDivElement>) => void;
   onDrop: (e: DragEvent<HTMLDivElement>) => void;
   showAlternateTopMark: boolean;
+  onClearCustomLaps: () => void;
   onUpdate: (u: Partial<FleetConfig>) => void;
   onRemove: () => void;
 }) {
@@ -254,6 +260,32 @@ function FleetRow({
             <span className="unit">min</span>
           </span>
         </label>
+        {fleet.customLaps == null ? (
+          <button onClick={() => onUpdate({ customLaps: defaultLaps })}>
+            + Set custom lap count
+          </button>
+        ) : (
+          <label>
+            Laps
+            <span className="input-row">
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={fleet.customLaps}
+                onChange={(e) => onUpdate({ customLaps: Math.max(1, Number(e.target.value)) })}
+              />
+              <button
+                type="button"
+                className="unset-btn"
+                title="Use default lap count"
+                onClick={onClearCustomLaps}
+              >
+                🗑️
+              </button>
+            </span>
+          </label>
+        )}
         {showAlternateTopMark && (
           <label>
             Alternate top mark

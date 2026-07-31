@@ -54,6 +54,7 @@ interface AppState {
   moveFleet: (fromIndex: number, toIndex: number) => void;
   removeFleet: (id: string) => void;
   updateFleet: (id: string, updates: Partial<FleetConfig>) => void;
+  clearFleetCustomLaps: (id: string) => void;
   refreshSimulation: () => void;
   setPlaying: (playing: boolean) => void;
   setSpeedMultiplier: (speed: number) => void;
@@ -116,6 +117,18 @@ export const useAppStore = create<AppState>()(
           },
         })),
 
+      clearFleetCustomLaps: (id) =>
+        set((s) => ({
+          config: {
+            ...s.config,
+            fleets: s.config.fleets.map((f) => {
+              if (f.id !== id) return f;
+              const { customLaps: _customLaps, ...rest } = f;
+              return rest;
+            }),
+          },
+        })),
+
       refreshSimulation: () => {
         const { config } = get();
         if (config.fleets.length === 0) { set({ simulation: null }); return; }
@@ -146,7 +159,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'fleet-position-v1',
-      version: 5,
+      version: 6,
       migrate: (persistedState: unknown) => {
         const state = persistedState as { config?: Record<string, unknown> } | undefined;
         const config = state?.config;
@@ -179,6 +192,9 @@ export const useAppStore = create<AppState>()(
         for (const fleet of (config.fleets as Array<Record<string, unknown>> | undefined) ?? []) {
           if (!('useAlternateTopMark' in fleet)) {
             fleet.useAlternateTopMark = false;
+          }
+          if (!('customLaps' in fleet)) {
+            fleet.customLaps = undefined;
           }
           if ('startDelayMinutes' in fleet && !('additionalDelayMinutes' in fleet)) {
             fleet.additionalDelayMinutes = Number(fleet.startDelayMinutes) || 0;

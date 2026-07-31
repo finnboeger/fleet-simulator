@@ -28,9 +28,10 @@ function compute(
   const fleetInputs = config.fleets.map((fleet) => {
     const perf = classPerformances.get(fleet.className);
     if (!perf) throw new Error(`No class performance loaded for "${fleet.className}"`);
+    const lapCount = fleet.customLaps ?? config.laps;
     const legs = buildFleetCourseLegs(
       geometry,
-      config.laps,
+      lapCount,
       config.hasAlternateTopMark && fleet.useAlternateTopMark,
     );
     return { fleet, perf, legs };

@@ -43,6 +43,8 @@ export interface FleetConfig {
   className: string;
   /** Whether this fleet uses the alternate windward mark without offset. */
   useAlternateTopMark: boolean;
+  /** Optional per-fleet lap count override; falls back to RaceConfig.laps when unset. */
+  customLaps?: number;
   /** Percentage of first-boat pace for last boat (e.g. 0.15 = 15 % slower). */
   lastSlowdownFraction: number;
   /**
