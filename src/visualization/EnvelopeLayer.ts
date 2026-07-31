@@ -1,8 +1,6 @@
-import { Container, Graphics } from 'pixi.js';
-import type { FleetEnvelope, SideLimitSample, TrajectoryPoint } from '../simulation/types.js';
+import type { FleetEnvelope, Point, SideLimitSample, TrajectoryPoint } from '../simulation/types.js';
 import type { Scene } from './Scene.js';
 
-// Show one history point per this many seconds (keeps draw calls manageable)
 const HISTORY_STEP_SEC = 30;
 
 function binarySearch(points: TrajectoryPoint[], timeSec: number): TrajectoryPoint {
@@ -27,37 +25,58 @@ function nearestLimit(samples: SideLimitSample[], timeSec: number): SideLimitSam
   return best;
 }
 
-export class EnvelopeLayer extends Container {
-  private readonly hexColor: number;
-  private histG = new Graphics();
-  private markG = new Graphics();
+function toRgba(colorInt: number, alpha: number): string {
+  const r = (colorInt >> 16) & 0xff;
+  const g = (colorInt >> 8) & 0xff;
+  const b = colorInt & 0xff;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
-  constructor(hexColor: number) {
-    super();
-    this.hexColor = hexColor;
-    this.addChild(this.histG);
-    this.addChild(this.markG);
+function downsample(points: TrajectoryPoint[]): Point[] {
+  let startIdx = 0;
+  for (let i = 0; i < points.length; i++) {
+    if (points[i].legIndex > 0 || points[i].legProgress > 0) { startIdx = i; break; }
+  }
+  const pts: Point[] = [];
+  for (let i = startIdx; i < points.length; i += HISTORY_STEP_SEC) {
+    pts.push(points[i].position);
+  }
+  if (points.length > 0) pts.push(points[points.length - 1].position);
+  return pts;
+}
+
+export class EnvelopeLayer {
+  private readonly colorInt: number;
+  private history: { first: Point[]; bulk: Point[]; last: Point[] } =
+    { first: [], bulk: [], last: [] };
+
+  constructor(hexColorInt: number) {
+    this.colorInt = hexColorInt;
   }
 
-  /** Call once per simulation change – renders downsampled track trails. */
-  renderHistory(envelope: FleetEnvelope, scene: Scene): void {
-    this.histG.clear();
+  /** Pre-compute downsampled track points once per simulation. No drawing. */
+  renderHistory(envelope: FleetEnvelope, _scene: Scene): void {
     const [first, bulk, last] = envelope.tracks;
-    const toS = (p: { x: number; y: number }) => scene.simToScreen(p);
-
-    this.polyline(first.points, toS, 0.35, 1.5);
-    this.polyline(bulk.points, toS, 0.65, 2.5);
-    this.polyline(last.points, toS, 0.35, 1.5);
+    this.history = {
+      first: downsample(first.points),
+      bulk: downsample(bulk.points),
+      last: downsample(last.points),
+    };
   }
 
-  /** Call each frame – renders the current-time position marker. */
-  renderAtTime(envelope: FleetEnvelope, timeSec: number, scene: Scene): void {
-    this.markG.clear();
+  /** Draw history trails and the current-time position marker onto the scene canvas. */
+  draw(scene: Scene, envelope: FleetEnvelope, timeSec: number): void {
+    const { ctx } = scene;
+    const toS = (p: Point) => scene.simToScreen(p);
+    const ci = this.colorInt;
+
+    // History trails (first/last faint, bulk prominent)
+    this.polyline(ctx, this.history.first.map(toS), toRgba(ci, 0.38), 1.5);
+    this.polyline(ctx, this.history.bulk.map(toS), toRgba(ci, 0.68), 2.5);
+    this.polyline(ctx, this.history.last.map(toS), toRgba(ci, 0.38), 1.5);
+
+    // Current-time position marker
     const [first, bulk, last] = envelope.tracks;
-    if (!first.points.length) return;
-
-    const toS = (p: { x: number; y: number }) => scene.simToScreen(p);
-
     const firstS = toS(binarySearch(first.points, timeSec).position);
     const bulkPt = binarySearch(bulk.points, timeSec);
     const bulkS = toS(bulkPt.position);
@@ -70,54 +89,53 @@ export class EnvelopeLayer extends Container {
       : 20;
     const endW = Math.max(6, halfSpread * 0.22);
 
-    // Outer envelope (first → side limits → last)
-    this.markG.poly([
-      firstS.x, firstS.y,
-      bulkS.x + halfSpread, bulkS.y,
-      lastS.x, lastS.y,
-      bulkS.x - halfSpread, bulkS.y,
-    ]).fill({ color: this.hexColor, alpha: 0.18 });
+    // Outer diamond – 18% alpha (first / last limits at 50% saturation per plan)
+    ctx.beginPath();
+    ctx.moveTo(firstS.x, firstS.y);
+    ctx.lineTo(bulkS.x + halfSpread, bulkS.y);
+    ctx.lineTo(lastS.x, lastS.y);
+    ctx.lineTo(bulkS.x - halfSpread, bulkS.y);
+    ctx.closePath();
+    ctx.fillStyle = toRgba(ci, 0.18);
+    ctx.fill();
 
-    // Inner denser region (100 % saturation at bulk, 50 % at first/last per plan)
-    this.markG.poly([
-      firstS.x - endW, firstS.y,
-      firstS.x + endW, firstS.y,
-      bulkS.x + halfSpread * 0.5, bulkS.y,
-      lastS.x + endW, lastS.y,
-      lastS.x - endW, lastS.y,
-      bulkS.x - halfSpread * 0.5, bulkS.y,
-    ]).fill({ color: this.hexColor, alpha: 0.30 });
+    // Inner diamond – 30% alpha (bulk at higher saturation per plan)
+    ctx.beginPath();
+    ctx.moveTo(firstS.x - endW, firstS.y);
+    ctx.lineTo(firstS.x + endW, firstS.y);
+    ctx.lineTo(bulkS.x + halfSpread * 0.5, bulkS.y);
+    ctx.lineTo(lastS.x + endW, lastS.y);
+    ctx.lineTo(lastS.x - endW, lastS.y);
+    ctx.lineTo(bulkS.x - halfSpread * 0.5, bulkS.y);
+    ctx.closePath();
+    ctx.fillStyle = toRgba(ci, 0.30);
+    ctx.fill();
 
     // Bulk dot
-    this.markG.circle(bulkS.x, bulkS.y, 7).fill({ color: this.hexColor, alpha: 0.92 });
-    this.markG.circle(bulkS.x, bulkS.y, 7).stroke({ color: 0xffffff, width: 1.5 });
+    ctx.beginPath();
+    ctx.arc(bulkS.x, bulkS.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = toRgba(ci, 0.92);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   }
 
+  // No-op: no PixiJS objects to release.
+  destroy(): void {}
+
   private polyline(
-    points: TrajectoryPoint[],
-    toS: (p: { x: number; y: number }) => { x: number; y: number },
-    alpha: number,
+    ctx: CanvasRenderingContext2D,
+    pts: { x: number; y: number }[],
+    color: string,
     width: number,
   ): void {
-    // Skip pre-race standing still at start line
-    let startIdx = 0;
-    for (let i = 0; i < points.length; i++) {
-      if (points[i].legIndex > 0 || points[i].legProgress > 0) { startIdx = i; break; }
-    }
-
-    // Collect downsampled points
-    const pts: { x: number; y: number }[] = [];
-    for (let i = startIdx; i < points.length; i += HISTORY_STEP_SEC) {
-      pts.push(toS(points[i].position));
-    }
-    // Always include last point so the line reaches the finish
-    const last = points[points.length - 1];
-    if (last) pts.push(toS(last.position));
-
     if (pts.length < 2) return;
-
-    this.histG.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) this.histG.lineTo(pts[i].x, pts[i].y);
-    this.histG.stroke({ color: this.hexColor, width, alpha });
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
   }
 }

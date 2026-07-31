@@ -1,95 +1,106 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../state/store.js';
 import { Scene } from '../../visualization/Scene.js';
 import { EnvelopeLayer } from '../../visualization/EnvelopeLayer.js';
 import { buildCourseGeometry } from '../../simulation/course.js';
+import type { CourseGeometry } from '../../simulation/types.js';
 
 export function CourseCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<Scene | null>(null);
   const layersRef = useRef<Map<string, EnvelopeLayer>>(new Map());
+  const geometryRef = useRef<CourseGeometry | null>(null);
   const [ready, setReady] = useState(false);
 
   const simulation = useAppStore((s) => s.simulation);
   const config = useAppStore((s) => s.config);
   const currentTimeSec = useAppStore((s) => s.playback.currentTimeSec);
 
-  // Initialise PixiJS once
+  // Redraws from refs/store – safe to call from any effect without stale closures.
+  const drawFrame = useCallback(() => {
+    const scene = sceneRef.current;
+    const geometry = geometryRef.current;
+    if (!scene?.isReady || !geometry) return;
+
+    const { simulation: sim, playback } = useAppStore.getState();
+    scene.clear();
+    scene.renderCourse(geometry);
+
+    if (sim) {
+      for (const fleetEnv of sim.fleets) {
+        layersRef.current.get(fleetEnv.fleetId)?.draw(scene, fleetEnv, playback.currentTimeSec);
+      }
+    }
+  }, []);
+
+  // Init Canvas 2D – synchronous, no async complications.
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    let cancelled = false;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     const scene = new Scene();
+    scene.init(canvas);
     sceneRef.current = scene;
-
-    scene.init(container).then(() => {
-      if (!cancelled) setReady(true);
-    }).catch(console.error);
-
+    setReady(true);
     return () => {
-      cancelled = true;
       scene.destroy();
       sceneRef.current = null;
       setReady(false);
     };
   }, []);
 
-  // Rebuild course display when config changes (or scene becomes ready)
+  // Size the canvas to match its CSS container and keep it in sync on resize.
   useEffect(() => {
-    if (!ready) return;
-    const scene = sceneRef.current!;
+    const container = containerRef.current;
+    const scene = sceneRef.current;
+    if (!container || !scene || !ready) return;
+
+    const doResize = () => {
+      scene.resize(container.clientWidth, container.clientHeight);
+      drawFrame();
+    };
+    const observer = new ResizeObserver(doResize);
+    observer.observe(container);
+    doResize(); // initial size
+    return () => observer.disconnect();
+  }, [ready, drawFrame]);
+
+  // Recompute geometry when race config changes.
+  useEffect(() => {
+    if (!ready || !sceneRef.current) return;
     const geometry = buildCourseGeometry(config);
+    geometryRef.current = geometry;
+    sceneRef.current.fitCourse(geometry);
+    drawFrame();
+  }, [config, ready, drawFrame]);
 
-    scene.fitCourse(geometry);
-    scene.renderCourse(geometry);
-
-    // Re-fit on canvas resize
-    scene.onResize(() => {
-      scene.fitCourse(geometry);
-      scene.renderCourse(geometry);
-    });
-  }, [config, ready]);
-
-  // Rebuild envelope history layers when simulation changes
+  // Rebuild envelope layers when simulation output changes.
   useEffect(() => {
     if (!ready) return;
-    const scene = sceneRef.current!;
-
-    for (const layer of layersRef.current.values()) {
-      scene.envelopeContainer.removeChild(layer);
-      layer.destroy();
-    }
     layersRef.current.clear();
 
-    if (!simulation) return;
-
-    // Read current config without subscribing (fleets are stable here)
-    const { config: cfg } = useAppStore.getState();
-    for (const fleetEnv of simulation.fleets) {
-      const fleetCfg = cfg.fleets.find((f) => f.id === fleetEnv.fleetId);
-      if (!fleetCfg) continue;
-      const hexColor = parseInt(fleetCfg.color.replace('#', ''), 16);
-      const layer = new EnvelopeLayer(hexColor);
-      layer.renderHistory(fleetEnv, scene);
-      scene.envelopeContainer.addChild(layer);
-      layersRef.current.set(fleetEnv.fleetId, layer);
+    const { config: cfg, simulation: sim } = useAppStore.getState();
+    if (sim) {
+      for (const fleetEnv of sim.fleets) {
+        const fleetCfg = cfg.fleets.find((f) => f.id === fleetEnv.fleetId);
+        if (!fleetCfg) continue;
+        const colorInt = parseInt(fleetCfg.color.replace('#', ''), 16);
+        const layer = new EnvelopeLayer(colorInt);
+        layer.renderHistory(fleetEnv, sceneRef.current!);
+        layersRef.current.set(fleetEnv.fleetId, layer);
+      }
     }
-  }, [simulation, ready]);
+    drawFrame();
+  }, [simulation, ready, drawFrame]);
 
-  // Render at current time each frame
+  // Redraw on every time-cursor tick.
   useEffect(() => {
-    if (!ready || !simulation) return;
-    const scene = sceneRef.current!;
-    for (const fleetEnv of simulation.fleets) {
-      layersRef.current.get(fleetEnv.fleetId)?.renderAtTime(fleetEnv, currentTimeSec, scene);
-    }
-  }, [currentTimeSec, simulation, ready]);
+    drawFrame();
+  }, [currentTimeSec, drawFrame]);
 
   return (
-    <div
-      ref={containerRef}
-      style={{ width: '100%', height: '100%', overflow: 'hidden' }}
-    />
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+    </div>
   );
 }

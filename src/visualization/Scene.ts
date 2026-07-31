@@ -1,4 +1,3 @@
-import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
 import type { CourseGeometry, Point } from '../simulation/types.js';
 
 export interface ViewTransform {
@@ -8,36 +7,38 @@ export interface ViewTransform {
 }
 
 export class Scene {
-  readonly app: Application;
-  readonly envelopeContainer: Container;
-  private courseLayer: Container;
+  private canvas!: HTMLCanvasElement;
+  private _ctx!: CanvasRenderingContext2D;
   private _transform: ViewTransform = { scale: 1, offsetX: 0, offsetY: 0 };
+  private _logicalW = 800;
+  private _logicalH = 600;
+  private _geometry: CourseGeometry | null = null;
   private _ready = false;
-
-  constructor() {
-    this.app = new Application();
-    this.envelopeContainer = new Container();
-    this.courseLayer = new Container();
-  }
-
-  async init(container: HTMLDivElement): Promise<void> {
-    await this.app.init({
-      background: 0xf0f4f8,
-      resizeTo: container,
-      antialias: true,
-      resolution: window.devicePixelRatio ?? 1,
-      autoDensity: true,
-    });
-    container.appendChild(this.app.canvas);
-    this.app.stage.addChild(this.envelopeContainer);
-    this.app.stage.addChild(this.courseLayer);
-    this._ready = true;
-  }
 
   get isReady(): boolean { return this._ready; }
   get transform(): ViewTransform { return this._transform; }
+  get ctx(): CanvasRenderingContext2D { return this._ctx; }
 
-  /** Convert simulation coordinates (Y increases upward) to screen space (Y down). */
+  init(canvas: HTMLCanvasElement): void {
+    this.canvas = canvas;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable');
+    this._ctx = ctx;
+    this._ready = true;
+  }
+
+  /** Resize the backing pixel buffer; must be called when the container changes size. */
+  resize(w: number, h: number): void {
+    const dpr = window.devicePixelRatio ?? 1;
+    this._logicalW = w;
+    this._logicalH = h;
+    // Assigning width/height resets all canvas state – re-apply DPR scale after.
+    this.canvas.width = Math.round(w * dpr);
+    this.canvas.height = Math.round(h * dpr);
+    this._ctx.scale(dpr, dpr);
+    if (this._geometry) this.fitCourse(this._geometry);
+  }
+
   simToScreen(pt: Point): { x: number; y: number } {
     return {
       x: pt.x * this._transform.scale + this._transform.offsetX,
@@ -45,79 +46,80 @@ export class Scene {
     };
   }
 
-  /** Compute the transform so the full course fits in the canvas with padding. */
   fitCourse(geometry: CourseGeometry): void {
+    this._geometry = geometry;
     const pad = 60;
-    const w = this.app.screen.width;
-    const h = this.app.screen.height;
+    const w = this._logicalW;
+    const h = this._logicalH;
 
     const beatLen = geometry.windwardMark.y - geometry.leewardGate.y;
     const sideMargin = Math.max(beatLen * 0.55, 200);
 
-    const simW = sideMargin * 2;
-    const simH = geometry.windwardMark.y - geometry.startLine.y;
-
-    const scale = Math.min((w - 2 * pad) / simW, (h - 2 * pad) / simH);
+    const scale = Math.min(
+      (w - 2 * pad) / (sideMargin * 2),
+      (h - 2 * pad) / (geometry.windwardMark.y - geometry.startLine.y),
+    );
 
     this._transform = {
       scale,
-      // Center horizontally; the sim x-axis midpoint is 0
       offsetX: w / 2,
-      // Bottom of rendered area at (h - pad), Y is flipped
       offsetY: h - pad + geometry.startLine.y * scale,
     };
   }
 
+  clear(): void {
+    const { _ctx: ctx, _logicalW: w, _logicalH: h } = this;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#f0f4f8';
+    ctx.fillRect(0, 0, w, h);
+  }
+
   renderCourse(geometry: CourseGeometry): void {
-    this.courseLayer.removeChildren();
-    const g = new Graphics();
+    const { _ctx: ctx } = this;
     const s = (p: Point) => this.simToScreen(p);
 
     // Faint centreline
-    const top = s(geometry.windwardMark);
-    const bot = s(geometry.startLine);
-    g.moveTo(top.x, top.y).lineTo(bot.x, bot.y)
-      .stroke({ color: 0xbbbbbb, width: 1, alpha: 0.5 });
+    ctx.beginPath();
+    ctx.moveTo(s(geometry.windwardMark).x, s(geometry.windwardMark).y);
+    ctx.lineTo(s(geometry.startLine).x, s(geometry.startLine).y);
+    ctx.strokeStyle = 'rgba(170,170,170,0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     // Start line
-    g.moveTo(s({ x: -150, y: 0 }).x, s({ x: -150, y: 0 }).y)
-      .lineTo(s({ x: 150, y: 0 }).x, s({ x: 150, y: 0 }).y)
-      .stroke({ color: 0xcc2222, width: 3 });
+    ctx.beginPath();
+    ctx.moveTo(s({ x: -150, y: 0 }).x, s({ x: -150, y: 0 }).y);
+    ctx.lineTo(s({ x: 150, y: 0 }).x, s({ x: 150, y: 0 }).y);
+    ctx.strokeStyle = '#cc2222';
+    ctx.lineWidth = 3;
+    ctx.stroke();
 
     // Leeward gate
-    g.moveTo(s({ x: -80, y: geometry.leewardGate.y }).x, s({ x: -80, y: geometry.leewardGate.y }).y)
-      .lineTo(s({ x: 80, y: geometry.leewardGate.y }).x, s({ x: 80, y: geometry.leewardGate.y }).y)
-      .stroke({ color: 0xdd6600, width: 2 });
-
-    this.courseLayer.addChild(g);
+    const lgY = geometry.leewardGate.y;
+    ctx.beginPath();
+    ctx.moveTo(s({ x: -80, y: lgY }).x, s({ x: -80, y: lgY }).y);
+    ctx.lineTo(s({ x: 80, y: lgY }).x, s({ x: 80, y: lgY }).y);
+    ctx.strokeStyle = '#dd6600';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Windward mark
     const wm = s(geometry.windwardMark);
-    const markG = new Graphics();
-    markG.circle(wm.x, wm.y, 8).fill(0xcc2222);
-    this.courseLayer.addChild(markG);
+    ctx.beginPath();
+    ctx.arc(wm.x, wm.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#cc2222';
+    ctx.fill();
 
     // Labels
-    const style = new TextStyle({ fontSize: 12, fill: '#555555' });
-
-    const wmLabel = new Text({ text: 'W', style });
-    wmLabel.anchor.set(0.5, 1.8);
-    wmLabel.position.set(wm.x, wm.y);
-    this.courseLayer.addChild(wmLabel);
-
-    const slPt = s({ x: 0, y: 0 });
-    const slLabel = new Text({ text: 'Start', style });
-    slLabel.anchor.set(0.5, -0.2);
-    slLabel.position.set(slPt.x, slPt.y);
-    this.courseLayer.addChild(slLabel);
-  }
-
-  onResize(callback: () => void): void {
-    this.app.renderer.on('resize', callback);
+    ctx.fillStyle = '#555555';
+    ctx.font = '12px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('W', wm.x, wm.y - 14);
+    const sl = s({ x: 0, y: 0 });
+    ctx.fillText('Start', sl.x, sl.y + 18);
   }
 
   destroy(): void {
-    this.app.destroy(true);
     this._ready = false;
   }
 }
