@@ -63,7 +63,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       config: DEFAULT_CONFIG,
       simulation: null,
-      playback: { isPlaying: false, speedMultiplier: 1, currentTimeSec: 0 },
+      playback: { isPlaying: false, speedMultiplier: 60, currentTimeSec: 0 },
 
       updateConfig: (updates) =>
         set((s) => ({ config: { ...s.config, ...updates } })),
@@ -99,7 +99,7 @@ export const useAppStore = create<AppState>()(
         if (config.fleets.length === 0) { set({ simulation: null }); return; }
         try {
           const simulation = _runSimulation(config, classPerformances);
-          set({ simulation, playback: { isPlaying: false, speedMultiplier: 1, currentTimeSec: 0 } });
+          set({ simulation, playback: { isPlaying: false, speedMultiplier: 60, currentTimeSec: 0 } });
         } catch (err) {
           console.error('Simulation error:', err);
         }
@@ -113,7 +113,7 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ playback: { ...s.playback, currentTimeSec } })),
 
       resetToDefault: () =>
-        set({ config: DEFAULT_CONFIG, simulation: null, playback: { isPlaying: false, speedMultiplier: 1, currentTimeSec: 0 } }),
+        set({ config: DEFAULT_CONFIG, simulation: null, playback: { isPlaying: false, speedMultiplier: 60, currentTimeSec: 0 } }),
     }),
     {
       name: 'fleet-position-v1',

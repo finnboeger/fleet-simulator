@@ -9,7 +9,7 @@ function fmt(sec: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-const SPEEDS = [1, 2, 5, 10, 30, 60];
+const SPEEDS = [30, 60, 90, 120, 150];
 
 export function Timeline() {
   const simulation = useAppStore((s) => s.simulation);
