@@ -65,6 +65,8 @@ export interface RaceConfig {
   startToGateMeters: number;
   /** True wind speed in knots, clamped to 4–20. */
   windSpeedKnots: number;
+  /** Whether fleet outlines are drawn on the course canvas. */
+  showOutline: boolean;
   fleets: FleetConfig[];
 }
 

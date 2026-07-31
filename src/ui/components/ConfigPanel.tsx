@@ -77,6 +77,14 @@ export function ConfigPanel() {
             <span className="unit">m</span>
           </span>
         </label>
+        <label>
+          Show outline
+          <input
+            type="checkbox"
+            checked={config.showOutline}
+            onChange={(e) => updateConfig({ showOutline: e.target.checked })}
+          />
+        </label>
       </section>
 
       <section className="config-section">

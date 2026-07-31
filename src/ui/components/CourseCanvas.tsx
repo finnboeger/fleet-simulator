@@ -15,6 +15,7 @@ export function CourseCanvas() {
 
   const simulation = useAppStore((s) => s.simulation);
   const config = useAppStore((s) => s.config);
+  const showOutline = useAppStore((s) => s.config.showOutline);
   const currentTimeSec = useAppStore((s) => s.playback.currentTimeSec);
 
   // Redraws from refs/store – safe to call from any effect without stale closures.
@@ -23,11 +24,11 @@ export function CourseCanvas() {
     const geometry = geometryRef.current;
     if (!scene?.isReady || !geometry) return;
 
-    const { simulation: sim, playback } = useAppStore.getState();
+    const { simulation: sim, playback, config: liveConfig } = useAppStore.getState();
     scene.clear();
     scene.renderCourse(geometry);
 
-    if (sim) {
+    if (sim && liveConfig.showOutline) {
       for (const fleetEnv of sim.fleets) {
         layersRef.current.get(fleetEnv.fleetId)?.draw(scene, fleetEnv, playback.currentTimeSec);
       }
@@ -97,6 +98,11 @@ export function CourseCanvas() {
   useEffect(() => {
     drawFrame();
   }, [currentTimeSec, drawFrame]);
+
+  // Redraw when outline visibility changes.
+  useEffect(() => {
+    drawFrame();
+  }, [showOutline, drawFrame]);
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%' }}>

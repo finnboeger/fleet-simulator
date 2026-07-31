@@ -32,6 +32,7 @@ const DEFAULT_CONFIG: RaceConfig = {
   offsetMeters: 80,
   startToGateMeters: 150,
   windSpeedKnots: 12,
+  showOutline: true,
   fleets: [],
 };
 
@@ -116,11 +117,15 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'fleet-position-v1',
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown) => {
         const state = persistedState as { config?: Record<string, unknown> } | undefined;
         const config = state?.config;
         if (!config) return persistedState;
+
+        if (!('showOutline' in config)) {
+          config.showOutline = DEFAULT_CONFIG.showOutline;
+        }
 
         if ('beatLengthMeters' in config && !('beatLengthNm' in config)) {
           const meters = Number(config.beatLengthMeters);

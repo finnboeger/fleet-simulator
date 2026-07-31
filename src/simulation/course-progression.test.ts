@@ -9,6 +9,7 @@ const DEFAULT_CONFIG: RaceConfig = {
   offsetMeters: 80,
   startToGateMeters: 150,
   windSpeedKnots: 12,
+  showOutline: true,
   fleets: [],
 };
 
