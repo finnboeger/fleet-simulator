@@ -5,14 +5,12 @@ export const START_SEQUENCE_SECONDS = 5 * 60;
 
 /**
  * Compute a fleet's race-start time (seconds from t=0) based on the
- * fixed 5-minute starting sequence plus the fleet's start delay.
+ * fixed 5-minute starting sequence plus the fleet's additional delay.
  *
  * t = 0 is the moment the very first starting sequence begins.
- * Each fleet's sequence starts at `startDelayMinutes * 60` seconds,
- * and the gun fires `START_SEQUENCE_SECONDS` seconds after that.
  */
-export function fleetRaceStartSeconds(startDelayMinutes: number): number {
-  return startDelayMinutes * 60 + START_SEQUENCE_SECONDS;
+export function fleetRaceStartSeconds(additionalDelayMinutes: number): number {
+  return (5 + additionalDelayMinutes) * 60;
 }
 
 /**
@@ -122,6 +120,17 @@ function legSpeed(leg: CourseLeg, upwindMps: number, downwindMps: number): numbe
     case 'finish':
       return downwindMps;
   }
+}
+
+/**
+ * Total time to sail the provided course legs at the supplied speeds.
+ */
+export function trackDurationSeconds(
+  legs: CourseLeg[],
+  upwindMps: number,
+  downwindMps: number,
+): number {
+  return legs.reduce((sum, leg) => sum + leg.lengthMeters / legSpeed(leg, upwindMps, downwindMps), 0);
 }
 
 /**

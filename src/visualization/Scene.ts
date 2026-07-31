@@ -94,14 +94,38 @@ export class Scene {
     ctx.lineWidth = 3;
     ctx.stroke();
 
+    // Start marks
+    ctx.fillStyle = '#cc2222';
+    for (const x of [-150, 150]) {
+      const startMark = s({ x, y: 0 });
+      ctx.beginPath();
+      ctx.arc(startMark.x, startMark.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Leeward gate
     const lgY = geometry.leewardGate.y;
+    const gateLeft = s({ x: -80, y: lgY });
+    const gateRight = s({ x: 80, y: lgY });
     ctx.beginPath();
-    ctx.moveTo(s({ x: -80, y: lgY }).x, s({ x: -80, y: lgY }).y);
-    ctx.lineTo(s({ x: 80, y: lgY }).x, s({ x: 80, y: lgY }).y);
+    ctx.moveTo(gateLeft.x, gateLeft.y);
+    ctx.lineTo(gateRight.x, gateRight.y);
     ctx.strokeStyle = '#dd6600';
     ctx.lineWidth = 2;
     ctx.stroke();
+
+    ctx.fillStyle = '#dd6600';
+    ctx.beginPath();
+    ctx.arc(gateLeft.x, gateLeft.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(gateRight.x, gateRight.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#666666';
+    ctx.font = '12px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Gate', (gateLeft.x + gateRight.x) / 2, gateLeft.y - 12);
 
     // Windward mark
     const wm = s(geometry.windwardMark);
@@ -115,6 +139,16 @@ export class Scene {
     ctx.font = '12px system-ui,sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('W', wm.x, wm.y - 14);
+
+    // Offset mark
+    const om = s(geometry.offsetMark);
+    ctx.beginPath();
+    ctx.arc(om.x, om.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+    ctx.fillStyle = '#555555';
+    ctx.fillText('O', om.x, om.y - 14);
+
     const sl = s({ x: 0, y: 0 });
     ctx.fillText('Start', sl.x, sl.y + 18);
   }

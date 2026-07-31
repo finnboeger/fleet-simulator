@@ -12,6 +12,7 @@ import {
   fleetRaceStartSeconds,
   generateTrajectory,
   knotsToMps,
+  trackDurationSeconds,
 } from './progression.js';
 
 const STEP_SECONDS = 1;
@@ -33,7 +34,7 @@ export function simulateFleetEnvelope(
   totalSec: number,
 ): FleetEnvelope {
   const { base, multipliers } = resolveFleetPerformance(perf, windKnots, fleet);
-  const raceStartSec = fleetRaceStartSeconds(fleet.startDelayMinutes);
+  const raceStartSec = fleetRaceStartSeconds(fleet.additionalDelayMinutes);
 
   const firstUpMps = knotsToMps(base.upwindVMG * multipliers.firstMultiplier);
   const firstDnMps = knotsToMps(base.downwindVMG * multipliers.firstMultiplier);
@@ -45,6 +46,7 @@ export function simulateFleetEnvelope(
   const firstPoints = generateTrajectory(legs, raceStartSec, firstUpMps, firstDnMps, STEP_SECONDS, totalSec);
   const bulkPoints = generateTrajectory(legs, raceStartSec, bulkUpMps, bulkDnMps, STEP_SECONDS, totalSec);
   const lastPoints = generateTrajectory(legs, raceStartSec, lastUpMps, lastDnMps, STEP_SECONDS, totalSec);
+  const firstFinishSeconds = raceStartSec + trackDurationSeconds(legs, firstUpMps, firstDnMps);
 
   const tracks: [TrackSamples, TrackSamples, TrackSamples] = [
     { role: 'first', points: firstPoints },
@@ -62,6 +64,7 @@ export function simulateFleetEnvelope(
   return {
     fleetId: fleet.id,
     raceStartSeconds: raceStartSec,
+    firstFinishSeconds,
     tracks,
     sideLimitsPerLeg,
   };

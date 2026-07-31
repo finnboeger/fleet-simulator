@@ -15,13 +15,13 @@ export function ConfigPanel() {
           <span className="input-row">
             <input
               type="number"
-              min={200}
-              max={5000}
-              step={50}
-              value={config.beatLengthMeters}
-              onChange={(e) => updateConfig({ beatLengthMeters: Number(e.target.value) })}
+              min={0.1}
+              max={10}
+              step={0.01}
+              value={config.beatLengthNm}
+              onChange={(e) => updateConfig({ beatLengthNm: Number(e.target.value) })}
             />
-            <span className="unit">m</span>
+            <span className="unit">nm</span>
           </span>
         </label>
         <label>
@@ -157,16 +157,16 @@ function FleetRow({
           </span>
         </label>
         <label>
-          Delay
+          Additional delay
           <span className="input-row">
             <input
               type="number"
               min={0}
               max={120}
               step={1}
-              value={fleet.startDelayMinutes}
+              value={fleet.additionalDelayMinutes}
               onChange={(e) =>
-                onUpdate({ startDelayMinutes: Math.max(0, Math.round(Number(e.target.value))) })
+                onUpdate({ additionalDelayMinutes: Math.max(0, Math.round(Number(e.target.value))) })
               }
             />
             <span className="unit">min</span>

@@ -80,6 +80,22 @@ export function Timeline() {
             );
           })}
 
+        {/* First-boat finish markers */}
+        {simulation &&
+          config.fleets.map((fleet) => {
+            const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
+            if (!env || duration === 0) return null;
+            const pct = (env.firstFinishSeconds / duration) * 100;
+            return (
+              <div
+                key={`${fleet.id}-finish`}
+                className="finish-marker"
+                style={{ left: `${pct}%`, background: fleet.color }}
+                title={`${fleet.className} first finish: ${fmt(env.firstFinishSeconds)}`}
+              />
+            );
+          })}
+
         <input
           type="range"
           min={0}

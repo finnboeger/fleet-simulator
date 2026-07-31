@@ -44,15 +44,15 @@ export interface FleetConfig {
    * Defaults to one-third of lastSlowdownFraction if not supplied.
    */
   bulkSlowdownFraction?: number;
-  /** Start delay in whole minutes (>= 0) relative to the start of the sequence. */
-  startDelayMinutes: number;
+  /** Extra delay in whole minutes beyond the fixed 5-minute start sequence. */
+  additionalDelayMinutes: number;
   /** CSS hex colour for this fleet's envelope (e.g. "#ff6600"). */
   color: string;
 }
 
 export interface RaceConfig {
-  /** Beat length in metres. */
-  beatLengthMeters: number;
+  /** Beat length in nautical miles. */
+  beatLengthNm: number;
   /** Number of laps (each lap = 1 upwind + 1 downwind). */
   laps: number;
   /** Offset leg length in metres (default 80). */
@@ -93,6 +93,7 @@ export interface CourseGeometry {
   startLine: Point;
   leewardGate: Point;
   windwardMark: Point;
+  offsetMark: Point;
 }
 
 // ─── Simulation output ────────────────────────────────────────────────────
@@ -125,6 +126,8 @@ export interface FleetEnvelope {
   fleetId: string;
   /** Race start time in seconds from time = 0. */
   raceStartSeconds: number;
+  /** Finish time of the first boat in seconds from time = 0. */
+  firstFinishSeconds: number;
   tracks: [TrackSamples, TrackSamples, TrackSamples]; // first, bulk, last
   sideLimitsPerLeg: SideLimitSample[][];
 }

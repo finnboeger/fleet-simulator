@@ -26,7 +26,7 @@ function compute(
 
   const maxRaceStart =
     config.fleets.length > 0
-      ? Math.max(...config.fleets.map((f) => fleetRaceStartSeconds(f.startDelayMinutes)))
+      ? Math.max(...config.fleets.map((f) => fleetRaceStartSeconds(f.additionalDelayMinutes)))
       : START_SEQUENCE_SECONDS;
   // 6 hours past the last race start is a safe upper bound
   const totalSec = maxRaceStart + 6 * 3600;

@@ -27,7 +27,7 @@ const DEFAULT_CLASS =
   'ILCA 6';
 
 const DEFAULT_CONFIG: RaceConfig = {
-  beatLengthMeters: 1000,
+  beatLengthNm: 1000 / 1852,
   laps: 2,
   offsetMeters: 80,
   startToGateMeters: 150,
@@ -74,7 +74,7 @@ export const useAppStore = create<AppState>()(
           id: crypto.randomUUID(),
           className: className ?? DEFAULT_CLASS,
           lastSlowdownFraction: 0.15,
-          startDelayMinutes: 0,
+          additionalDelayMinutes: 0,
           color: nextColor(usedColors),
         };
         set((s) => ({ config: { ...s.config, fleets: [...s.config.fleets, fleet] } }));
@@ -116,6 +116,27 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'fleet-position-v1',
+      version: 2,
+      migrate: (persistedState: unknown) => {
+        const state = persistedState as { config?: Record<string, unknown> } | undefined;
+        const config = state?.config;
+        if (!config) return persistedState;
+
+        if ('beatLengthMeters' in config && !('beatLengthNm' in config)) {
+          const meters = Number(config.beatLengthMeters);
+          config.beatLengthNm = Number.isFinite(meters) ? meters / 1852 : DEFAULT_CONFIG.beatLengthNm;
+          delete config.beatLengthMeters;
+        }
+
+        for (const fleet of (config.fleets as Array<Record<string, unknown>> | undefined) ?? []) {
+          if ('startDelayMinutes' in fleet && !('additionalDelayMinutes' in fleet)) {
+            fleet.additionalDelayMinutes = Number(fleet.startDelayMinutes) || 0;
+            delete fleet.startDelayMinutes;
+          }
+        }
+
+        return persistedState;
+      },
       // Only persist the race configuration; simulation and playback are transient
       partialize: (state) => ({ config: state.config }),
     },

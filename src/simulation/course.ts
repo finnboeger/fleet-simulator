@@ -28,15 +28,16 @@ function legLength(a: Point, b: Point): number {
  *   startLine (0, 0)
  *   leewardGate (0, startToGate)
  *   windwardMark (0, startToGate + beatLength)
- *   offsetMark  (offsetMeters, startToGate + beatLength)
+ *   offsetMark  (-offsetMeters, startToGate + beatLength)
  */
 export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
-  const { beatLengthMeters, laps, offsetMeters, startToGateMeters } = config;
+  const { beatLengthNm, laps, offsetMeters, startToGateMeters } = config;
+  const beatLengthMeters = beatLengthNm * 1852;
 
   const startLine = pt(0, 0);
   const leewardGate = pt(0, startToGateMeters);
   const windwardMark = pt(0, startToGateMeters + beatLengthMeters);
-  const offsetMark = pt(offsetMeters, startToGateMeters + beatLengthMeters);
+  const offsetMark = pt(-offsetMeters, startToGateMeters + beatLengthMeters);
 
   const legs: CourseLeg[] = [];
   let idx = 0;
@@ -66,7 +67,7 @@ export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
     }
   }
 
-  return { legs, startLine, leewardGate, windwardMark };
+  return { legs, startLine, leewardGate, windwardMark, offsetMark };
 }
 
 /** Total course distance in metres for a given geometry. */
