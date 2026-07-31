@@ -23,9 +23,10 @@
 
 .timeline-area {
   flex-shrink: 0;
-  height: 56px;
+  height: 80px;
   background: #1a1a2e;
   color: #fff;
+  container-type: inline-size;
 }
 
 /* ─── Config Panel ────────────────────────────────────────────────────────── */
@@ -234,6 +235,23 @@ button.primary:hover:not(:disabled) {
   gap: 10px;
 }
 
+.timeline-main-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  order: 2;
+}
+
+.timeline-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  order: 1;
+}
+
 .play-btn {
   background: none;
   border: none;
@@ -312,6 +330,37 @@ button.primary:hover:not(:disabled) {
   background: rgba(96 165 250 / 0.25);
   border-color: #60a5fa;
   color: #93c5fd;
+}
+
+@container (max-width: 600px) {
+  .timeline {
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    padding: 6px 12px;
+    gap: 6px;
+    height: auto;
+  }
+
+  .timeline-main-row {
+    width: 100%;
+    order: 1;
+  }
+
+  .timeline-controls-row {
+    width: 100%;
+    justify-content: space-between;
+    order: 2;
+  }
+
+  .time-display {
+    min-width: 52px;
+  }
+
+  .speed-controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
 }
 
 /* ─── Responsive ──────────────────────────────────────────────────────────── */

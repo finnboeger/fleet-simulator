@@ -63,74 +63,78 @@ export function Timeline() {
 
   return (
     <div className="timeline">
-      <button
-        className="play-btn"
-        onClick={() => setPlaying(!isPlaying)}
-        disabled={!simulation}
-        title={isPlaying ? 'Pause' : 'Play'}
-      >
-        {isPlaying ? '⏸' : '▶'}
-      </button>
+      <div className="timeline-main-row">
+        <div className="timeline-track">
+          {/* Fleet start markers */}
+          {simulation &&
+            config.fleets.map((fleet) => {
+              const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
+              if (!env || duration === 0) return null;
+              const pct = ((env.raceStartSeconds - timelineStart) / duration) * 100;
+              return (
+                <div
+                  key={fleet.id}
+                  className="start-marker"
+                  style={{ left: `${pct}%`, background: fleet.color }}
+                  title={`${fleet.className} gun: ${fmt(env.raceStartSeconds)}`}
+                />
+              );
+            })}
 
-      <div className="timeline-track">
-        {/* Fleet start markers */}
-        {simulation &&
-          config.fleets.map((fleet) => {
-            const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
-            if (!env || duration === 0) return null;
-            const pct = ((env.raceStartSeconds - timelineStart) / duration) * 100;
-            return (
-              <div
-                key={fleet.id}
-                className="start-marker"
-                style={{ left: `${pct}%`, background: fleet.color }}
-                title={`${fleet.className} gun: ${fmt(env.raceStartSeconds)}`}
-              />
-            );
-          })}
+          {/* First-boat finish markers */}
+          {simulation &&
+            config.fleets.map((fleet) => {
+              const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
+              if (!env || duration === 0) return null;
+              const pct = ((env.firstFinishSeconds - timelineStart) / duration) * 100;
+              return (
+                <div
+                  key={`${fleet.id}-finish`}
+                  className="finish-marker"
+                  style={{ left: `${pct}%`, background: fleet.color }}
+                  title={`${fleet.className} first finish: ${fmt(env.firstFinishSeconds)}`}
+                />
+              );
+            })}
 
-        {/* First-boat finish markers */}
-        {simulation &&
-          config.fleets.map((fleet) => {
-            const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
-            if (!env || duration === 0) return null;
-            const pct = ((env.firstFinishSeconds - timelineStart) / duration) * 100;
-            return (
-              <div
-                key={`${fleet.id}-finish`}
-                className="finish-marker"
-                style={{ left: `${pct}%`, background: fleet.color }}
-                title={`${fleet.className} first finish: ${fmt(env.firstFinishSeconds)}`}
-              />
-            );
-          })}
+          <input
+            type="range"
+            min={timelineStart}
+            max={timelineEnd}
+            step={1}
+            value={currentTimeSec}
+            disabled={!simulation}
+            onChange={(e) => {
+              setPlaying(false);
+              setCurrentTime(Number(e.target.value));
+            }}
+          />
+        </div>
 
-        <input
-          type="range"
-          min={timelineStart}
-          max={timelineEnd}
-          step={1}
-          value={currentTimeSec}
-          disabled={!simulation}
-          onChange={(e) => {
-            setPlaying(false);
-            setCurrentTime(Number(e.target.value));
-          }}
-        />
+        <span className="time-display">{fmt(Math.max(0, currentTimeSec - timelineStart))}</span>
       </div>
 
-      <span className="time-display">{fmt(Math.max(0, currentTimeSec - timelineStart))}</span>
+      <div className="timeline-controls-row">
+        <button
+          className="play-btn"
+          onClick={() => setPlaying(!isPlaying)}
+          disabled={!simulation}
+          title={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? '⏸' : '▶'}
+        </button>
 
-      <div className="speed-controls">
-        {SPEEDS.map((s) => (
-          <button
-            key={s}
-            className={`speed-btn${s === speedMultiplier ? ' active' : ''}`}
-            onClick={() => setSpeedMultiplier(s)}
-          >
-            {s}×
-          </button>
-        ))}
+        <div className="speed-controls">
+          {SPEEDS.map((s) => (
+            <button
+              key={s}
+              className={`speed-btn${s === speedMultiplier ? ' active' : ''}`}
+              onClick={() => setSpeedMultiplier(s)}
+            >
+              {s}×
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
