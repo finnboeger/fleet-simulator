@@ -121,7 +121,7 @@ export const useAppStore = create<AppState>()(
           set({
             simulation,
             playback: {
-              isPlaying: false,
+              isPlaying: true,
               speedMultiplier: 60,
               currentTimeSec: simulation.timelineStartSeconds,
             },
