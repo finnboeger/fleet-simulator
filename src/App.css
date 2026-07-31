@@ -32,6 +32,7 @@
 /* ─── Config Panel ────────────────────────────────────────────────────────── */
 .config-panel {
   width: 270px;
+  box-sizing: border-box;
   flex-shrink: 0;
   overflow-y: auto;
   border-left: 1px solid #ddd;
@@ -373,11 +374,11 @@ button.primary:hover:not(:disabled) {
     width: 100%;
     border-left: none;
     border-top: 1px solid #ddd;
-    max-height: 45vh;
+    max-height: calc(100svh - max(50svh,400px));
   }
 
   .main-area {
-    flex: none;
-    height: 55vh;
+    flex: 0 0 auto;
+    height: max(50svh,400px);
   }
 }
