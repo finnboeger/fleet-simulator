@@ -35,7 +35,14 @@ export function Timeline() {
 
       const { playback, simulation: sim } = useAppStore.getState();
       const maxTime = sim?.durationSeconds ?? 0;
+      const minTime = sim?.timelineStartSeconds ?? 0;
       const next = playback.currentTimeSec + delta * speedRef.current;
+
+      if (next <= minTime) {
+        setCurrentTime(minTime);
+        setPlaying(false);
+        return;
+      }
 
       if (next >= maxTime) {
         setCurrentTime(maxTime);
@@ -50,7 +57,9 @@ export function Timeline() {
     return () => cancelAnimationFrame(rafId);
   }, [isPlaying, simulation, setCurrentTime, setPlaying]);
 
-  const duration = simulation?.durationSeconds ?? 0;
+  const timelineStart = simulation?.timelineStartSeconds ?? 0;
+  const timelineEnd = simulation?.durationSeconds ?? 0;
+  const duration = Math.max(0, timelineEnd - timelineStart);
 
   return (
     <div className="timeline">
@@ -69,7 +78,7 @@ export function Timeline() {
           config.fleets.map((fleet) => {
             const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
             if (!env || duration === 0) return null;
-            const pct = (env.raceStartSeconds / duration) * 100;
+            const pct = ((env.raceStartSeconds - timelineStart) / duration) * 100;
             return (
               <div
                 key={fleet.id}
@@ -85,7 +94,7 @@ export function Timeline() {
           config.fleets.map((fleet) => {
             const env = simulation.fleets.find((e) => e.fleetId === fleet.id);
             if (!env || duration === 0) return null;
-            const pct = (env.firstFinishSeconds / duration) * 100;
+            const pct = ((env.firstFinishSeconds - timelineStart) / duration) * 100;
             return (
               <div
                 key={`${fleet.id}-finish`}
@@ -98,8 +107,8 @@ export function Timeline() {
 
         <input
           type="range"
-          min={0}
-          max={duration}
+          min={timelineStart}
+          max={timelineEnd}
           step={1}
           value={currentTimeSec}
           disabled={!simulation}
@@ -110,7 +119,7 @@ export function Timeline() {
         />
       </div>
 
-      <span className="time-display">{fmt(currentTimeSec)}</span>
+      <span className="time-display">{fmt(Math.max(0, currentTimeSec - timelineStart))}</span>
 
       <div className="speed-controls">
         {SPEEDS.map((s) => (

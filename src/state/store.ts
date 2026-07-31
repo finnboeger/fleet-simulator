@@ -99,7 +99,14 @@ export const useAppStore = create<AppState>()(
         if (config.fleets.length === 0) { set({ simulation: null }); return; }
         try {
           const simulation = _runSimulation(config, classPerformances);
-          set({ simulation, playback: { isPlaying: false, speedMultiplier: 60, currentTimeSec: 0 } });
+          set({
+            simulation,
+            playback: {
+              isPlaying: false,
+              speedMultiplier: 60,
+              currentTimeSec: simulation.timelineStartSeconds,
+            },
+          });
         } catch (err) {
           console.error('Simulation error:', err);
         }

@@ -137,12 +137,16 @@ export interface FleetEnvelope {
   downwindAngle: number;
   /** Finish time of the first boat in seconds from time = 0. */
   firstFinishSeconds: number;
+  /** Finish time of the last boat in seconds from time = 0. */
+  lastFinishSeconds: number;
   tracks: [TrackSamples, TrackSamples, TrackSamples]; // first, bulk, last
   sideLimitsPerLeg: SideLimitSample[][];
 }
 
 export interface SimulationOutput {
   fleets: FleetEnvelope[];
-  /** Total simulated duration in seconds. */
+  /** Timeline window start in seconds from time = 0. */
+  timelineStartSeconds: number;
+  /** Timeline window end in seconds from time = 0. */
   durationSeconds: number;
 }

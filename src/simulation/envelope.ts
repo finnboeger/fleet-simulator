@@ -47,6 +47,7 @@ export function simulateFleetEnvelope(
   const bulkPoints = generateTrajectory(legs, raceStartSec, bulkUpMps, bulkDnMps, STEP_SECONDS, totalSec);
   const lastPoints = generateTrajectory(legs, raceStartSec, lastUpMps, lastDnMps, STEP_SECONDS, totalSec);
   const firstFinishSeconds = raceStartSec + trackDurationSeconds(legs, firstUpMps, firstDnMps);
+  const lastFinishSeconds = raceStartSec + trackDurationSeconds(legs, lastUpMps, lastDnMps);
 
   const tracks: [TrackSamples, TrackSamples, TrackSamples] = [
     { role: 'first', points: firstPoints },
@@ -67,6 +68,7 @@ export function simulateFleetEnvelope(
     upwindAngle: base.upwindAngle,
     downwindAngle: base.downwindAngle,
     firstFinishSeconds,
+    lastFinishSeconds,
     tracks,
     sideLimitsPerLeg,
   };
