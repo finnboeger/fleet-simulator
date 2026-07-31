@@ -2,13 +2,17 @@
 
 /** Raw JSON shape of a single speed-range entry in a class file. */
 export interface RawSpeedEntry {
-  upwind?: { knot: number };
-  downwind?: { knot: number };
+  upwind?: {
+    knot: number;
+    /** Angle in degrees from true wind. */
+    angle?: number;
+  };
+  downwind?: {
+    knot: number;
+    /** Angle in degrees from true wind. */
+    angle?: number;
+  };
   reach?: { knot: number };
-  /** Upwind VMG angle in degrees from true wind (default 45). */
-  upwindAngle?: number;
-  /** Downwind VMG angle in degrees from true wind (default 165). */
-  downwindAngle?: number;
 }
 
 /** Raw `src/data/classes/[name].json` shape (only the parts we use). */

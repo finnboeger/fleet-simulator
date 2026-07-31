@@ -21,9 +21,9 @@ describe('parseSpeedKey', () => {
 
 const SAMPLE_CLASS: RawClassFile = {
   speeds: {
-    '5..8': { upwind: { knot: 3.0 }, downwind: { knot: 4.0 } },
-    '8..12': { upwind: { knot: 4.0 }, downwind: { knot: 6.0 } },
-    '12..15': { upwind: { knot: 5.0 }, downwind: { knot: 8.0 } },
+    '5..8': { upwind: { knot: 3.0, angle: 42 }, downwind: { knot: 4.0, angle: 162 } },
+    '8..12': { upwind: { knot: 4.0, angle: 44 }, downwind: { knot: 6.0, angle: 164 } },
+    '12..15': { upwind: { knot: 5.0, angle: 46 }, downwind: { knot: 8.0, angle: 166 } },
   },
 };
 
@@ -33,10 +33,20 @@ describe('parseClassFile', () => {
     expect(perf.rows.map((r) => r.windKnot)).toEqual([5, 8, 12]);
   });
 
-  it('applies default upwind and downwind angles', () => {
+  it('reads nested upwind.angle and downwind.angle values', () => {
     const perf = parseClassFile('Test', SAMPLE_CLASS);
+    expect(perf.rows[0].upwindAngle).toBe(42);
+    expect(perf.rows[0].downwindAngle).toBe(162);
+  });
+
+  it('applies defaults when nested angles are omitted', () => {
+    const perf = parseClassFile('Defaults', {
+      speeds: {
+        '5..8': { upwind: { knot: 3.0 }, downwind: { knot: 4.0 } },
+      },
+    });
     expect(perf.rows[0].upwindAngle).toBe(45);
-    expect(perf.rows[0].downwindAngle).toBe(170);
+    expect(perf.rows[0].downwindAngle).toBe(165);
   });
 });
 

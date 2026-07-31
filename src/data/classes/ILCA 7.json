@@ -5,7 +5,8 @@
         "knot": 3.158
       },
       "downwind": {
-        "knot": 4.286
+        "knot": 4.286,
+        "angle": 140
       },
       "reach": {
         "knot": 5.0
@@ -16,7 +17,8 @@
         "knot": 3.529
       },
       "downwind": {
-        "knot": 5.0
+        "knot": 5.0,
+        "angle": 150
       },
       "reach": {
         "knot": 6.316
@@ -27,7 +29,8 @@
         "knot": 3.75
       },
       "downwind": {
-        "knot": 6.667
+        "knot": 6.667,
+        "angle": 160
       },
       "reach": {
         "knot": 8.571
@@ -38,7 +41,8 @@
         "knot": 3.636
       },
       "downwind": {
-        "knot": 8.571
+        "knot": 8.571,
+        "angle": 165
       },
       "reach": {
         "knot": 12.0

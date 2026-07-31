@@ -22,8 +22,8 @@ function normaliseRow(windKnot: number, entry: RawSpeedEntry): ClassSpeedRow {
     windKnot,
     upwindVMG: entry.upwind?.knot ?? 0,
     downwindVMG: entry.downwind?.knot ?? 0,
-    upwindAngle: entry.upwindAngle ?? DEFAULT_UPWIND_ANGLE,
-    downwindAngle: entry.downwindAngle ?? DEFAULT_DOWNWIND_ANGLE,
+    upwindAngle: entry.upwind?.angle ?? DEFAULT_UPWIND_ANGLE,
+    downwindAngle: entry.downwind?.angle ?? DEFAULT_DOWNWIND_ANGLE,
   };
 }
 
