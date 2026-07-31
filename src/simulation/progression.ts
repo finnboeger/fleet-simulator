@@ -4,13 +4,16 @@ import type { CourseLeg, Point, TrajectoryPoint } from './types.js';
 export const START_SEQUENCE_SECONDS = 5 * 60;
 
 /**
- * Compute a fleet's race-start time (seconds from t=0) based on the
- * fixed 5-minute starting sequence plus the fleet's additional delay.
+ * Compute the next fleet's race-start time (seconds from t=0) based on the
+ * previous fleet start plus a fixed 5-minute minimum and additional delay.
  *
- * t = 0 is the moment the very first starting sequence begins.
+ * For the first fleet, pass previousStartSeconds = 0.
  */
-export function fleetRaceStartSeconds(additionalDelayMinutes: number): number {
-  return (5 + additionalDelayMinutes) * 60;
+export function fleetRaceStartSeconds(
+  previousStartSeconds: number,
+  additionalDelayMinutes: number,
+): number {
+  return previousStartSeconds + (5 + additionalDelayMinutes) * 60;
 }
 
 /**

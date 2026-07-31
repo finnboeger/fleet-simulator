@@ -9,7 +9,6 @@ import type {
 import { resolveFleetPerformance } from './performance.js';
 import {
   computeLegSideLimits,
-  fleetRaceStartSeconds,
   generateTrajectory,
   knotsToMps,
   trackDurationSeconds,
@@ -31,10 +30,10 @@ export function simulateFleetEnvelope(
   perf: ClassPerformance,
   windKnots: number,
   legs: CourseLeg[],
+  raceStartSec: number,
   totalSec: number,
 ): FleetEnvelope {
   const { base, multipliers } = resolveFleetPerformance(perf, windKnots, fleet);
-  const raceStartSec = fleetRaceStartSeconds(fleet.additionalDelayMinutes);
 
   const firstUpMps = knotsToMps(base.upwindVMG * multipliers.firstMultiplier);
   const firstDnMps = knotsToMps(base.downwindVMG * multipliers.firstMultiplier);

@@ -14,9 +14,9 @@ const DEFAULT_CONFIG: RaceConfig = {
 };
 
 describe('fleetRaceStartSeconds', () => {
-  it('keeps a fixed five minute minimum and adds the extra delay', () => {
-    expect(fleetRaceStartSeconds(0)).toBe(300);
-    expect(fleetRaceStartSeconds(4)).toBe(540);
+  it('adds fixed minimum + extra delay to the previous fleet start time', () => {
+    expect(fleetRaceStartSeconds(0, 0)).toBe(300);
+    expect(fleetRaceStartSeconds(300, 4)).toBe(840);
   });
 });
 

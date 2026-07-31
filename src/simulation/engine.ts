@@ -31,16 +31,22 @@ function compute(
     return { fleet, perf };
   });
 
+  const raceStartTimes: number[] = [];
+  let previousStartSec = 0;
+  for (const { fleet } of fleetInputs) {
+    const raceStartSec = fleetRaceStartSeconds(previousStartSec, fleet.additionalDelayMinutes);
+    raceStartTimes.push(raceStartSec);
+    previousStartSec = raceStartSec;
+  }
+
   const minRaceStart =
-    fleetInputs.length > 0
-      ? Math.min(...fleetInputs.map(({ fleet }) => fleetRaceStartSeconds(fleet.additionalDelayMinutes)))
-      : START_SEQUENCE_SECONDS;
+    raceStartTimes.length > 0 ? raceStartTimes[0] : START_SEQUENCE_SECONDS;
 
   const maxLastFinish =
     fleetInputs.length > 0
       ? Math.max(
-          ...fleetInputs.map(({ fleet, perf }) => {
-            const raceStartSec = fleetRaceStartSeconds(fleet.additionalDelayMinutes);
+          ...fleetInputs.map(({ fleet, perf }, index) => {
+            const raceStartSec = raceStartTimes[index];
             const { base, multipliers } = resolveFleetPerformance(perf, windKnots, fleet);
             const lastUpMps = knotsToMps(base.upwindVMG * multipliers.lastMultiplier);
             const lastDnMps = knotsToMps(base.downwindVMG * multipliers.lastMultiplier);
@@ -52,8 +58,15 @@ function compute(
   const timelineStartSeconds = minRaceStart - 60;
   const timelineEndSeconds = maxLastFinish + 60;
 
-  const fleets = fleetInputs.map(({ fleet, perf }) =>
-    simulateFleetEnvelope(fleet, perf, windKnots, geometry.legs, timelineEndSeconds),
+  const fleets = fleetInputs.map(({ fleet, perf }, index) =>
+    simulateFleetEnvelope(
+      fleet,
+      perf,
+      windKnots,
+      geometry.legs,
+      raceStartTimes[index],
+      timelineEndSeconds,
+    ),
   );
 
   return { fleets, timelineStartSeconds, durationSeconds: timelineEndSeconds };
