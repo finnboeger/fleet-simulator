@@ -25,19 +25,19 @@ describe('buildCourseGeometry', () => {
 
     expect(geometry.windwardMark.y).toBe(150 + 1852);
     expect(geometry.offsetMark.x).toBeLessThan(0);
-    expect(geometry.legs.map((leg) => leg.type)).toEqual(['start-to-gate', 'upwind', 'offset', 'finish']);
+    expect(geometry.legs.map((leg) => leg.type)).toEqual(['upwind', 'offset', 'finish']);
   });
 });
 
 describe('trackDurationSeconds', () => {
   it('adds leg times using the correct speed by leg type', () => {
     const legs: CourseLeg[] = [
-      { type: 'start-to-gate', start: { x: 0, y: 0 }, end: { x: 0, y: 100 }, lengthMeters: 100, index: 0 },
-      { type: 'upwind', start: { x: 0, y: 100 }, end: { x: 0, y: 300 }, lengthMeters: 200, index: 1 },
+      { type: 'upwind', start: { x: 0, y: 0 }, end: { x: 0, y: 200 }, lengthMeters: 200, index: 0 },
+      { type: 'offset', start: { x: 0, y: 200 }, end: { x: 0, y: 300 }, lengthMeters: 100, index: 1 },
       { type: 'finish', start: { x: 0, y: 300 }, end: { x: 0, y: 0 }, lengthMeters: 300, index: 2 },
     ];
 
-    expect(trackDurationSeconds(legs, 10, 20)).toBeCloseTo(100 / 20 + 200 / 10 + 300 / 20);
+    expect(trackDurationSeconds(legs, 10, 20)).toBeCloseTo(200 / 10 + 100 / 20 + 300 / 20);
   });
 });
 

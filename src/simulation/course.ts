@@ -46,9 +46,6 @@ export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
     legs.push({ type, start, end, lengthMeters: legLength(start, end), index: idx++ });
   }
 
-  // Start area to leeward gate
-  addLeg('start-to-gate', startLine, leewardGate);
-
   for (let lap = 0; lap < laps; lap++) {
     const isLastLap = lap === laps - 1;
 

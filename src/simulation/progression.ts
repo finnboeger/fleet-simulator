@@ -114,7 +114,6 @@ function legSpeed(leg: CourseLeg, upwindMps: number, downwindMps: number): numbe
   switch (leg.type) {
     case 'upwind':
       return upwindMps;
-    case 'start-to-gate':
     case 'downwind':
     case 'offset':
     case 'finish':

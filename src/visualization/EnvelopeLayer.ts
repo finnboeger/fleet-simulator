@@ -1,138 +1,6 @@
 import type { FleetEnvelope, Point } from '../simulation/types.js';
 import type { Scene } from './Scene.js';
-
-function toRgba(colorInt: number, alpha: number): string {
-  const r = (colorInt >> 16) & 0xff;
-  const g = (colorInt >> 8) & 0xff;
-  const b = colorInt & 0xff;
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-export class EnvelopeLayer {
-  private readonly colorInt: number;
-
-  constructor(hexColorInt: number) {
-    this.colorInt = hexColorInt;
-  }
-
-  renderHistory(_envelope: FleetEnvelope, _scene: Scene): void {}
-
-
-  draw(scene: Scene, _envelope: FleetEnvelope, _timeSec: number): void {
-    const geometry = scene.geometry;
-    if (!geometry) return;
-
-  const { ctx } = scene;
-  const s = (p: Point) => scene.simToScreen(p);
-  const ci = this.colorInt;
-
-  const startLineLeft = { x: -150, y: geometry.startLine.y };
-  const startLineRight = { x: 150, y: geometry.startLine.y };
-  const gateLeft = { x: -80, y: geometry.leewardGate.y };
-
-  const gateRight = { x: 80, y: geometry.leewardGate.y };
-  const windward = geometry.windwardMark;
-  const offset = geometry.offsetMark;
-
-    // Upwind from start line to windward mark.
-    drawOutline(
-      ctx,
-
-  s(startLineLeft),
-  s(startLineRight),
-  s(windward),
-
-      45,
-      toRgba(ci, 0.85),
-    );
-
-    // Downwind from offset mark to leeward gate.
-    drawOutline(
-      ctx,
-
-  s({ x: offset.x - 120, y: offset.y }),
-  s({ x: offset.x + 120, y: offset.y }),
-  s(gateLeft),
-
-      170,
-      toRgba(ci, 0.60),
-    );
-
-    // Second upwind from leeward gate to windward mark.
-    drawOutline(
-      ctx,
-
-  s(gateLeft),
-  s(gateRight),
-  s(windward),
-
-      45,
-      toRgba(ci, 0.85),
-    );
-
-    // Final downwind from offset mark to start line.
-    drawOutline(
-      ctx,
-
-  s({ x: offset.x - 120, y: offset.y }),
-  s({ x: offset.x + 120, y: offset.y }),
-  s(startLineLeft),
-
-      170,
-      toRgba(ci, 0.60),
-    );
-
-  }
-
-  destroy(): void {}
-}
-
-
-function drawOutline(
-  ctx: CanvasRenderingContext2D,
-  lowerLeft: Point,
-
-  lowerRight: Point,
-  upper: Point,
-  angleDeg: number,
-
-  strokeStyle: string,
-): void {
-  const angleRad = (angleDeg * Math.PI) / 180;
-
-  const travel = Math.tan(angleRad);
-  const xOffset = Math.max(10, Math.abs(upper.y - lowerLeft.y) * travel * 0.07);
-
-  const lowerInnerLeft = lerp(lowerLeft, upper, 0.28);
-  const lowerInnerRight = lerp(lowerRight, upper, 0.28);
-  const upperInnerLeft = lerp(lowerLeft, upper, 0.72);
-
-  const upperInnerRight = lerp(lowerRight, upper, 0.72);
-  const points = [
-    lowerLeft,
-
-  { x: lowerInnerLeft.x - xOffset, y: lowerInnerLeft.y },
-  { x: upper.x - xOffset, y: upper.y },
-  { x: upper.x + xOffset, y: upper.y },
-
-    { x: lowerInnerRight.x + xOffset, y: lowerInnerRight.y },
-    lowerRight,
-  ];
-
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-
-  ctx.closePath();
-  ctx.strokeStyle = strokeStyle;
-  ctx.lineWidth = 2;
-
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.stroke();
-}
-import type { FleetEnvelope, Point } from '../simulation/types.js';
-import type { Scene } from './Scene.js';
+import { GATE_HALF_WIDTH, START_LINE_HALF_WIDTH } from './Scene.js';
 
 function toRgba(colorInt: number, alpha: number): string {
   const r = (colorInt >> 16) & 0xff;
@@ -143,6 +11,16 @@ function toRgba(colorInt: number, alpha: number): string {
 
 type Vec = { x: number; y: number };
 
+type LegOutlineSpec = {
+  id: string;
+  start: Point;
+  end: Point;
+  startHalfWidth: number;
+  endHalfWidth: number;
+  angleDeg: number;
+  travel: 'up' | 'down';
+};
+
 export class EnvelopeLayer {
   private readonly colorInt: number;
 
@@ -152,116 +30,156 @@ export class EnvelopeLayer {
 
   renderHistory(_envelope: FleetEnvelope, _scene: Scene): void {}
 
-  draw(scene: Scene, envelope: FleetEnvelope, timeSec: number): void {
+  draw(scene: Scene, _envelope: FleetEnvelope, _timeSec: number): void {
     const geometry = scene.geometry;
     if (!geometry) return;
 
-    const leg = currentLegIndex(envelope, timeSec, geometry);
-    const outline = buildOutlineForLeg(scene, geometry, leg);
-    if (outline.length < 2) return;
-
+    const specs = buildLegSpecs(geometry, _envelope.upwindAngle, _envelope.downwindAngle);
     const { ctx } = scene;
-    ctx.beginPath();
-    ctx.moveTo(outline[0].x, outline[0].y);
-    for (let i = 1; i < outline.length; i++) ctx.lineTo(outline[i].x, outline[i].y);
-    ctx.closePath();
-    ctx.strokeStyle = toRgba(this.colorInt, 0.85);
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
+
+    specs.forEach((spec, index) => {
+      drawLegOutline(ctx, scene, spec, toRgba(this.colorInt, index % 2 === 0 ? 0.85 : 0.65));
+    });
   }
 
   destroy(): void {}
 }
 
-function currentLegIndex(envelope: FleetEnvelope, timeSec: number, geometry: NonNullable<Scene['geometry']>): number {
-  const firstTrack = envelope.tracks[0];
-  let lo = 0;
-  let hi = firstTrack.points.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (firstTrack.points[mid].timeSeconds < timeSec) lo = mid + 1;
-    else hi = mid;
-  }
-  return geometry.legs[firstTrack.points[Math.min(lo, firstTrack.points.length - 1)]?.legIndex ?? 0]?.index ?? 0;
-}
-
-function buildOutlineForLeg(
-  scene: Scene,
+function buildLegSpecs(
   geometry: NonNullable<Scene['geometry']>,
-  legIndex: number,
-): Point[] {
-  const leg = geometry.legs[legIndex] ?? geometry.legs[0];
-  const toS = (p: Point) => scene.simToScreen(p);
+  upwindAngle: number,
+  downwindAngle: number,
+): LegOutlineSpec[] {
+  const laps = geometry.legs.filter((leg) => leg.type === 'upwind').length;
+  const specs: LegOutlineSpec[] = [
+    {
+      id: 'upwind-1',
+      start: geometry.startLine,
+      end: geometry.windwardMark,
+      startHalfWidth: START_LINE_HALF_WIDTH,
+      endHalfWidth: 0,
+      angleDeg: upwindAngle,
+      travel: 'up',
+    },
+  ];
 
-  if (leg.type === 'upwind') {
-    const isFirstUpwind = legIndex === 1;
-    const start = isFirstUpwind ? geometry.startLine : geometry.leewardGate;
-    return hexagonBetween(
-      toS({ x: start.x - 150, y: start.y }),
-      toS({ x: start.x + 150, y: start.y }),
-      toS({ x: geometry.windwardMark.x - 90, y: geometry.windwardMark.y }),
-      toS({ x: geometry.windwardMark.x + 90, y: geometry.windwardMark.y }),
-      45,
-    );
+  for (let lap = 1; lap <= laps; lap++) {
+    specs.push({
+      id: `offset-${lap}`,
+      start: geometry.windwardMark,
+      end: geometry.offsetMark,
+      startHalfWidth: 0,
+      endHalfWidth: 0,
+      angleDeg: 75,
+      travel: 'down',
+    });
+
+    if (lap < laps) {
+      specs.push({
+        id: `downwind-${lap}`,
+        start: geometry.offsetMark,
+        end: geometry.leewardGate,
+        startHalfWidth: 0,
+        endHalfWidth: -GATE_HALF_WIDTH,
+        angleDeg: downwindAngle,
+        travel: 'down',
+      });
+
+      specs.push({
+        id: `upwind-${lap + 1}`,
+        start: geometry.leewardGate,
+        end: geometry.windwardMark,
+        startHalfWidth: GATE_HALF_WIDTH,
+        endHalfWidth: 0,
+        angleDeg: upwindAngle,
+        travel: 'up',
+      });
+    } else {
+      specs.push({
+        id: 'finish',
+        start: geometry.offsetMark,
+        end: geometry.startLine,
+        startHalfWidth: 0,
+        endHalfWidth: -START_LINE_HALF_WIDTH,
+        angleDeg: downwindAngle,
+        travel: 'down',
+      });
+    }
   }
 
-  if (leg.type === 'downwind' || leg.type === 'finish') {
-    const end = leg.type === 'finish' ? geometry.startLine : geometry.leewardGate;
-    return hexagonBetween(
-      toS({ x: geometry.offsetMark.x - 90, y: geometry.offsetMark.y }),
-      toS({ x: geometry.offsetMark.x + 90, y: geometry.offsetMark.y }),
-      toS({ x: end.x - 80, y: end.y }),
-      toS({ x: end.x + 80, y: end.y }),
-      170,
-    );
-  }
+  return specs;
+}
 
-  if (leg.type === 'offset') {
-    return hexagonBetween(
-      toS({ x: geometry.windwardMark.x - 90, y: geometry.windwardMark.y }),
-      toS({ x: geometry.windwardMark.x + 90, y: geometry.windwardMark.y }),
-      toS({ x: geometry.offsetMark.x - 90, y: geometry.offsetMark.y }),
-      toS({ x: geometry.offsetMark.x + 90, y: geometry.offsetMark.y }),
-      170,
-    );
-  }
+function drawLegOutline(
+  ctx: CanvasRenderingContext2D,
+  scene: Scene,
+  spec: LegOutlineSpec,
+  strokeStyle: string,
+): void {
+  const startCenter = scene.simToScreen(spec.start);
+  const endCenter = scene.simToScreen(spec.end);
 
-  return hexagonBetween(
-    toS({ x: geometry.startLine.x - 150, y: geometry.startLine.y }),
-    toS({ x: geometry.startLine.x + 150, y: geometry.startLine.y }),
-    toS({ x: geometry.leewardGate.x - 80, y: geometry.leewardGate.y }),
-    toS({ x: geometry.leewardGate.x + 80, y: geometry.leewardGate.y }),
-    170,
+  const startLeft = { x: startCenter.x - spec.startHalfWidth, y: startCenter.y };
+  const startRight = { x: startCenter.x + spec.startHalfWidth, y: startCenter.y };
+  const endLeft = { x: endCenter.x - spec.endHalfWidth, y: endCenter.y };
+  const endRight = { x: endCenter.x + spec.endHalfWidth, y: endCenter.y };
+
+  const lowerLeftCorner = rayIntersection(
+    startLeft,
+    rayDirection(spec.angleDeg, spec.travel, 'left', 'start'),
+    endLeft,
+    rayDirection(spec.angleDeg, spec.travel, 'left', 'end'),
   );
+  const lowerRightCorner = rayIntersection(
+    startRight,
+    rayDirection(spec.angleDeg, spec.travel, 'right', 'start'),
+    endRight,
+    rayDirection(spec.angleDeg, spec.travel, 'right', 'end'),
+  );
+
+  const points = [
+    startLeft,
+    lowerLeftCorner,
+    endLeft,
+    endRight,
+    lowerRightCorner,
+    startRight,
+  ];
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.closePath();
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
 }
 
-function hexagonBetween(startLeft: Point, startRight: Point, endLeft: Point, endRight: Point, angleDeg: number): Point[] {
-  const startUpLeft = rayIntersection(startLeft, rayDir(angleDeg, 'up-left'), endLeft, rayDir(angleDeg, 'down-left'));
-  const startUpRight = rayIntersection(startRight, rayDir(angleDeg, 'up-right'), endRight, rayDir(angleDeg, 'down-right'));
-  return [startLeft, startUpLeft, endLeft, endRight, startUpRight, startRight];
-}
-
-function rayDir(angleDeg: number, kind: 'up-left' | 'up-right' | 'down-left' | 'down-right'): Vec {
+function rayDirection(
+  angleDeg: number,
+  travel: 'up' | 'down',
+  side: 'left' | 'right',
+  originRole: 'start' | 'end',
+): Vec {
   const rad = (angleDeg * Math.PI) / 180;
-  const dx = Math.cos(rad);
-  const dy = Math.sin(rad);
-  switch (kind) {
-    case 'up-left':
-      return { x: -dx, y: -dy };
-    case 'up-right':
-      return { x: dx, y: -dy };
-    case 'down-left':
-      return { x: -dx, y: dy };
-    case 'down-right':
-      return { x: dx, y: dy };
-  }
+  const acrossWind = Math.sin(rad);
+  const alongWind = Math.cos(rad);
+  const alongCourse = (travel === 'up' ? -1 : 1) * (originRole === 'end' ? -1 : 1);
+  const horizontal = side === 'left' ? -1 : 1;
+  return {
+    x: horizontal * acrossWind,
+    y: alongCourse * alongWind,
+  };
 }
 
 function rayIntersection(p1: Point, d1: Vec, p2: Point, d2: Vec): Point {
   const det = d1.x * d2.y - d1.y * d2.x;
-  if (Math.abs(det) < 1e-6) return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+  if (Math.abs(det) < 1e-6) {
+    return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+  }
+
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   const t = (dx * d2.y - dy * d2.x) / det;

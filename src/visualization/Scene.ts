@@ -1,5 +1,8 @@
 import type { CourseGeometry, Point } from '../simulation/types.js';
 
+export const START_LINE_HALF_WIDTH = 150;
+export const GATE_HALF_WIDTH = 80;
+
 export interface ViewTransform {
   scale: number;
   offsetX: number;
@@ -89,15 +92,15 @@ export class Scene {
 
     // Start line
     ctx.beginPath();
-    ctx.moveTo(s({ x: -150, y: 0 }).x, s({ x: -150, y: 0 }).y);
-    ctx.lineTo(s({ x: 150, y: 0 }).x, s({ x: 150, y: 0 }).y);
+    ctx.moveTo(s({ x: -START_LINE_HALF_WIDTH, y: 0 }).x, s({ x: -START_LINE_HALF_WIDTH, y: 0 }).y);
+    ctx.lineTo(s({ x: START_LINE_HALF_WIDTH, y: 0 }).x, s({ x: START_LINE_HALF_WIDTH, y: 0 }).y);
     ctx.strokeStyle = '#cc2222';
     ctx.lineWidth = 3;
     ctx.stroke();
 
     // Start marks
     ctx.fillStyle = '#cc2222';
-    for (const x of [-150, 150]) {
+    for (const x of [-START_LINE_HALF_WIDTH, START_LINE_HALF_WIDTH]) {
       const startMark = s({ x, y: 0 });
       ctx.beginPath();
       ctx.arc(startMark.x, startMark.y, 4, 0, Math.PI * 2);
@@ -106,8 +109,8 @@ export class Scene {
 
     // Leeward gate
     const lgY = geometry.leewardGate.y;
-    const gateLeft = s({ x: -80, y: lgY });
-    const gateRight = s({ x: 80, y: lgY });
+    const gateLeft = s({ x: -GATE_HALF_WIDTH, y: lgY });
+    const gateRight = s({ x: GATE_HALF_WIDTH, y: lgY });
     ctx.beginPath();
     ctx.moveTo(gateLeft.x, gateLeft.y);
     ctx.lineTo(gateRight.x, gateRight.y);

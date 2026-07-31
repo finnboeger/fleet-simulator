@@ -7,7 +7,7 @@ export interface RawSpeedEntry {
   reach?: { knot: number };
   /** Upwind VMG angle in degrees from true wind (default 45). */
   upwindAngle?: number;
-  /** Downwind VMG angle in degrees from true wind (default 170). */
+  /** Downwind VMG angle in degrees from true wind (default 165). */
   downwindAngle?: number;
 }
 
@@ -72,7 +72,6 @@ export interface Point {
 }
 
 export type LegType =
-  | 'start-to-gate'
   | 'upwind'
   | 'offset'
   | 'downwind'
@@ -126,6 +125,10 @@ export interface FleetEnvelope {
   fleetId: string;
   /** Race start time in seconds from time = 0. */
   raceStartSeconds: number;
+  /** Class-specific upwind angle from true wind in degrees. */
+  upwindAngle: number;
+  /** Class-specific downwind angle from true wind in degrees. */
+  downwindAngle: number;
   /** Finish time of the first boat in seconds from time = 0. */
   firstFinishSeconds: number;
   tracks: [TrackSamples, TrackSamples, TrackSamples]; // first, bulk, last

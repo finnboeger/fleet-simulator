@@ -1,7 +1,7 @@
 import type { ClassPerformance, ClassSpeedRow, RawClassFile, RawSpeedEntry } from './types.js';
 
 const DEFAULT_UPWIND_ANGLE = 45;
-const DEFAULT_DOWNWIND_ANGLE = 170;
+const DEFAULT_DOWNWIND_ANGLE = 165;
 
 /**
  * Parse a speed key like `"5"` or `"5..8"` into the lower-bound wind speed.
