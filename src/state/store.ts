@@ -28,6 +28,8 @@ const DEFAULT_CLASS =
 
 const DEFAULT_CONFIG: RaceConfig = {
   beatLengthNm: 1000 / 1852,
+  hasAlternateTopMark: false,
+  alternateBeatLengthNm: (1000 / 1852) * 0.85,
   laps: 2,
   offsetMeters: 80,
   startToGateMeters: 150,
@@ -75,6 +77,7 @@ export const useAppStore = create<AppState>()(
         const fleet: FleetConfig = {
           id: crypto.randomUUID(),
           className: className ?? DEFAULT_CLASS,
+          useAlternateTopMark: false,
           lastSlowdownFraction: 0.15,
           additionalDelayMinutes: 0,
           color: nextColor(usedColors),
@@ -143,11 +146,25 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'fleet-position-v1',
-      version: 3,
+      version: 5,
       migrate: (persistedState: unknown) => {
         const state = persistedState as { config?: Record<string, unknown> } | undefined;
         const config = state?.config;
         if (!config) return persistedState;
+
+        if (!('hasAlternateTopMark' in config)) {
+          config.hasAlternateTopMark = false;
+        }
+
+        if ('secondaryBeatLengthNm' in config && !('alternateBeatLengthNm' in config)) {
+          config.alternateBeatLengthNm = Number(config.secondaryBeatLengthNm) || DEFAULT_CONFIG.alternateBeatLengthNm;
+          delete config.secondaryBeatLengthNm;
+        }
+
+        if (!('alternateBeatLengthNm' in config)) {
+          config.alternateBeatLengthNm =
+            (Number(config.beatLengthNm) || DEFAULT_CONFIG.beatLengthNm) * 0.85;
+        }
 
         if (!('showOutline' in config)) {
           config.showOutline = DEFAULT_CONFIG.showOutline;
@@ -160,6 +177,9 @@ export const useAppStore = create<AppState>()(
         }
 
         for (const fleet of (config.fleets as Array<Record<string, unknown>> | undefined) ?? []) {
+          if (!('useAlternateTopMark' in fleet)) {
+            fleet.useAlternateTopMark = false;
+          }
           if ('startDelayMinutes' in fleet && !('additionalDelayMinutes' in fleet)) {
             fleet.additionalDelayMinutes = Number(fleet.startDelayMinutes) || 0;
             delete fleet.startDelayMinutes;

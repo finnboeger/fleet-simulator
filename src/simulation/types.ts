@@ -41,6 +41,8 @@ export interface ClassPerformance {
 export interface FleetConfig {
   id: string;
   className: string;
+  /** Whether this fleet uses the alternate windward mark without offset. */
+  useAlternateTopMark: boolean;
   /** Percentage of first-boat pace for last boat (e.g. 0.15 = 15 % slower). */
   lastSlowdownFraction: number;
   /**
@@ -57,6 +59,10 @@ export interface FleetConfig {
 export interface RaceConfig {
   /** Beat length in nautical miles. */
   beatLengthNm: number;
+  /** Whether the alternate windward mark is enabled and shown. */
+  hasAlternateTopMark: boolean;
+  /** Alternate beat length in nautical miles for the alternate windward mark. */
+  alternateBeatLengthNm: number;
   /** Number of laps (each lap = 1 upwind + 1 downwind). */
   laps: number;
   /** Offset leg length in metres (default 80). */
@@ -95,9 +101,11 @@ export interface CourseLeg {
 
 export interface CourseGeometry {
   legs: CourseLeg[];
+  hasAlternateTopMark: boolean;
   startLine: Point;
   leewardGate: Point;
   windwardMark: Point;
+  alternateWindwardMark: Point;
   offsetMark: Point;
 }
 
@@ -129,6 +137,7 @@ export interface SideLimitSample {
 
 export interface FleetEnvelope {
   fleetId: string;
+  legs: CourseLeg[];
   /** Race start time in seconds from time = 0. */
   raceStartSeconds: number;
   /** Class-specific upwind angle from true wind in degrees. */

@@ -1,5 +1,5 @@
 import type { ClassPerformance, RaceConfig, SimulationOutput } from './types.js';
-import { buildCourseGeometry } from './course.js';
+import { buildCourseGeometry, buildFleetCourseLegs } from './course.js';
 import { simulateFleetEnvelope } from './envelope.js';
 import { clampWindSpeed, resolveFleetPerformance } from './performance.js';
 import { fleetRaceStartSeconds, START_SEQUENCE_SECONDS } from './progression.js';
@@ -28,7 +28,12 @@ function compute(
   const fleetInputs = config.fleets.map((fleet) => {
     const perf = classPerformances.get(fleet.className);
     if (!perf) throw new Error(`No class performance loaded for "${fleet.className}"`);
-    return { fleet, perf };
+    const legs = buildFleetCourseLegs(
+      geometry,
+      config.laps,
+      config.hasAlternateTopMark && fleet.useAlternateTopMark,
+    );
+    return { fleet, perf, legs };
   });
 
   const raceStartTimes: number[] = [];
@@ -45,12 +50,12 @@ function compute(
   const maxLastFinish =
     fleetInputs.length > 0
       ? Math.max(
-          ...fleetInputs.map(({ fleet, perf }, index) => {
+          ...fleetInputs.map(({ fleet, perf, legs }, index) => {
             const raceStartSec = raceStartTimes[index];
             const { base, multipliers } = resolveFleetPerformance(perf, windKnots, fleet);
             const lastUpMps = knotsToMps(base.upwindVMG * multipliers.lastMultiplier);
             const lastDnMps = knotsToMps(base.downwindVMG * multipliers.lastMultiplier);
-            return raceStartSec + trackDurationSeconds(geometry.legs, lastUpMps, lastDnMps);
+            return raceStartSec + trackDurationSeconds(legs, lastUpMps, lastDnMps);
           }),
         )
       : START_SEQUENCE_SECONDS;
@@ -58,12 +63,12 @@ function compute(
   const timelineStartSeconds = minRaceStart - 60;
   const timelineEndSeconds = maxLastFinish + 60;
 
-  const fleets = fleetInputs.map(({ fleet, perf }, index) =>
+  const fleets = fleetInputs.map(({ fleet, perf, legs }, index) =>
     simulateFleetEnvelope(
       fleet,
       perf,
       windKnots,
-      geometry.legs,
+      legs,
       raceStartTimes[index],
       timelineEndSeconds,
     ),

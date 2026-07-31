@@ -63,6 +63,7 @@ export function simulateFleetEnvelope(
 
   return {
     fleetId: fleet.id,
+    legs,
     raceStartSeconds: raceStartSec,
     upwindAngle: base.upwindAngle,
     downwindAngle: base.downwindAngle,

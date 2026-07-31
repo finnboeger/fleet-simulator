@@ -56,12 +56,15 @@ export class Scene {
     const w = this._logicalW;
     const h = this._logicalH;
 
-    const beatLen = geometry.windwardMark.y - geometry.leewardGate.y;
+    const topMarkY = geometry.hasAlternateTopMark
+      ? Math.max(geometry.windwardMark.y, geometry.alternateWindwardMark.y)
+      : geometry.windwardMark.y;
+    const beatLen = topMarkY - geometry.leewardGate.y;
     const sideMargin = Math.max(beatLen * 0.55, 200);
 
     const scale = Math.min(
       (w - 2 * pad) / (sideMargin * 2),
-      (h - 2 * pad) / (geometry.windwardMark.y - geometry.startLine.y),
+      (h - 2 * pad) / (topMarkY - geometry.startLine.y),
     );
 
     this._transform = {
@@ -84,7 +87,10 @@ export class Scene {
 
     // Faint centreline
     ctx.beginPath();
-    ctx.moveTo(s(geometry.windwardMark).x, s(geometry.windwardMark).y);
+    const topMark = geometry.hasAlternateTopMark && geometry.alternateWindwardMark.y > geometry.windwardMark.y
+      ? geometry.alternateWindwardMark
+      : geometry.windwardMark;
+    ctx.moveTo(s(topMark).x, s(topMark).y);
     ctx.lineTo(s(geometry.startLine).x, s(geometry.startLine).y);
     ctx.strokeStyle = 'rgba(170,170,170,0.5)';
     ctx.lineWidth = 1;
@@ -143,6 +149,16 @@ export class Scene {
     ctx.font = '12px system-ui,sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('W', wm.x, wm.y - 14);
+
+    if (geometry.hasAlternateTopMark) {
+      const swm = s(geometry.alternateWindwardMark);
+      ctx.beginPath();
+      ctx.arc(swm.x, swm.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#2563eb';
+      ctx.fill();
+      ctx.fillStyle = '#555555';
+      ctx.fillText('W2', swm.x, swm.y - 14);
+    }
 
     // Offset mark
     const om = s(geometry.offsetMark);

@@ -34,6 +34,26 @@ export function ConfigPanel() {
             <span className="unit">nm</span>
           </span>
         </label>
+        {config.hasAlternateTopMark ? (
+          <label>
+            Alternate beat
+            <span className="input-row">
+              <input
+                type="number"
+                min={0.1}
+                max={10}
+                step={0.01}
+                value={config.alternateBeatLengthNm}
+                onChange={(e) => updateConfig({ alternateBeatLengthNm: Number(e.target.value) })}
+              />
+              <span className="unit">nm</span>
+            </span>
+          </label>
+        ) : (
+          <button onClick={() => updateConfig({ hasAlternateTopMark: true })}>
+            Add alternate top mark
+          </button>
+        )}
         <label>
           Laps
           <input
@@ -127,6 +147,7 @@ export function ConfigPanel() {
               setDraggedFleetId(null);
               setDragOverFleetId(null);
             }}
+            showAlternateTopMark={config.hasAlternateTopMark}
             onUpdate={(u) => updateFleet(fleet.id, u)}
             onRemove={() => removeFleet(fleet.id)}
           />
@@ -154,6 +175,7 @@ function FleetRow({
   onDragEnd,
   onDragOver,
   onDrop,
+  showAlternateTopMark,
   onUpdate,
   onRemove,
 }: {
@@ -164,6 +186,7 @@ function FleetRow({
   onDragEnd: () => void;
   onDragOver: (e: DragEvent<HTMLDivElement>) => void;
   onDrop: (e: DragEvent<HTMLDivElement>) => void;
+  showAlternateTopMark: boolean;
   onUpdate: (u: Partial<FleetConfig>) => void;
   onRemove: () => void;
 }) {
@@ -231,6 +254,16 @@ function FleetRow({
             <span className="unit">min</span>
           </span>
         </label>
+        {showAlternateTopMark && (
+          <label>
+            Alternate top mark
+            <input
+              type="checkbox"
+              checked={fleet.useAlternateTopMark}
+              onChange={(e) => onUpdate({ useAlternateTopMark: e.target.checked })}
+            />
+          </label>
+        )}
       </div>
     </div>
   );

@@ -28,16 +28,43 @@ function legLength(a: Point, b: Point): number {
  *   startLine (0, 0)
  *   leewardGate (0, startToGate)
  *   windwardMark (0, startToGate + beatLength)
+ *   alternateWindwardMark (0, startToGate + alternateBeatLength)
  *   offsetMark  (-offsetMeters, startToGate + beatLength)
  */
 export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
-  const { beatLengthNm, laps, offsetMeters, startToGateMeters } = config;
+  const { beatLengthNm, hasAlternateTopMark, alternateBeatLengthNm, laps, offsetMeters, startToGateMeters } = config;
   const beatLengthMeters = beatLengthNm * 1852;
+  const alternateBeatLengthMeters = alternateBeatLengthNm * 1852;
 
   const startLine = pt(0, 0);
   const leewardGate = pt(0, startToGateMeters);
   const windwardMark = pt(0, startToGateMeters + beatLengthMeters);
+  const alternateWindwardMark = pt(0, startToGateMeters + alternateBeatLengthMeters);
   const offsetMark = pt(-offsetMeters, startToGateMeters + beatLengthMeters);
+
+  const legs = buildFleetCourseLegs(
+    { startLine, leewardGate, windwardMark, alternateWindwardMark, offsetMark },
+    laps,
+    false,
+  );
+
+  return {
+    legs,
+    hasAlternateTopMark,
+    startLine,
+    leewardGate,
+    windwardMark,
+    alternateWindwardMark,
+    offsetMark,
+  };
+}
+
+export function buildFleetCourseLegs(
+  marks: Pick<CourseGeometry, 'startLine' | 'leewardGate' | 'windwardMark' | 'alternateWindwardMark' | 'offsetMark'>,
+  laps: number,
+  useAlternateTopMark: boolean,
+): CourseLeg[] {
+  const topMark = useAlternateTopMark ? marks.alternateWindwardMark : marks.windwardMark;
 
   const legs: CourseLeg[] = [];
   let idx = 0;
@@ -50,21 +77,30 @@ export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
     const isLastLap = lap === laps - 1;
 
     // Upwind
-    addLeg('upwind', lap === 0 ? startLine : leewardGate, windwardMark);
+    addLeg('upwind', lap === 0 ? marks.startLine : marks.leewardGate, topMark);
 
-    // Offset leg (only if not the final lap's finish sequence)
-    addLeg('offset', windwardMark, offsetMark);
+    if (useAlternateTopMark) {
+      if (isLastLap) {
+        addLeg('finish', topMark, marks.startLine);
+      } else {
+        addLeg('downwind', topMark, marks.leewardGate);
+      }
+      continue;
+    }
+
+    // Offset leg (only on the regular windward mark course)
+    addLeg('offset', marks.windwardMark, marks.offsetMark);
 
     if (isLastLap) {
       // Final downwind directly to finish (start line used as finish)
-      addLeg('finish', offsetMark, startLine);
+      addLeg('finish', marks.offsetMark, marks.startLine);
     } else {
       // Regular downwind back to leeward gate
-      addLeg('downwind', offsetMark, leewardGate);
+      addLeg('downwind', marks.offsetMark, marks.leewardGate);
     }
   }
 
-  return { legs, startLine, leewardGate, windwardMark, offsetMark };
+  return legs;
 }
 
 /** Total course distance in metres for a given geometry. */

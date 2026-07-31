@@ -35,7 +35,7 @@ export class EnvelopeLayer {
     const geometry = scene.geometry;
     if (!geometry) return;
 
-    const specs = buildLegSpecs(geometry, _envelope.upwindAngle, _envelope.downwindAngle);
+    const specs = buildLegSpecs(geometry, _envelope.legs, _envelope.upwindAngle, _envelope.downwindAngle);
     const { ctx } = scene;
 
     const firstTrack = _envelope.tracks.find((track) => track.role === 'first');
@@ -84,72 +84,40 @@ export class EnvelopeLayer {
 
 function buildLegSpecs(
   geometry: NonNullable<Scene['geometry']>,
+  legs: FleetEnvelope['legs'],
   upwindAngle: number,
   downwindAngle: number,
 ): LegOutlineSpec[] {
-  const laps = geometry.legs.filter((leg) => leg.type === 'upwind').length;
-  const specs: LegOutlineSpec[] = [
-    {
-      id: 'upwind-1',
-      start: geometry.startLine,
-      end: geometry.windwardMark,
-      startHalfWidth: START_LINE_HALF_WIDTH,
-      endHalfWidth: 0,
-      angleDeg: upwindAngle,
-      travel: 'up',
-      fillCut: 'axis',
-    },
-  ];
+  return legs.map((leg, index) => ({
+    id: `${leg.type}-${index}`,
+    start: leg.start,
+    end: leg.end,
+    startHalfWidth: anchorHalfWidth(geometry, leg.start),
+    endHalfWidth: endAnchorHalfWidth(geometry, leg.type, leg.end),
+    angleDeg: leg.type === 'upwind' ? upwindAngle : leg.type === 'offset' ? 75 : downwindAngle,
+    travel: leg.type === 'upwind' ? 'up' : 'down',
+    fillCut: leg.type === 'downwind' || leg.type === 'finish' ? 'horizontal' : 'axis',
+  }));
+}
 
-  for (let lap = 1; lap <= laps; lap++) {
-    specs.push({
-      id: `offset-${lap}`,
-      start: geometry.windwardMark,
-      end: geometry.offsetMark,
-      startHalfWidth: 0,
-      endHalfWidth: 0,
-      angleDeg: 75,
-      travel: 'down',
-      fillCut: 'axis',
-    });
+function anchorHalfWidth(geometry: NonNullable<Scene['geometry']>, point: Point): number {
+  if (samePoint(point, geometry.startLine)) return START_LINE_HALF_WIDTH;
+  if (samePoint(point, geometry.leewardGate)) return GATE_HALF_WIDTH;
+  return 0;
+}
 
-    if (lap < laps) {
-      specs.push({
-        id: `downwind-${lap}`,
-        start: geometry.offsetMark,
-        end: geometry.leewardGate,
-        startHalfWidth: 0,
-        endHalfWidth: -GATE_HALF_WIDTH,
-        angleDeg: downwindAngle,
-        travel: 'down',
-        fillCut: 'horizontal',
-      });
+function endAnchorHalfWidth(
+  geometry: NonNullable<Scene['geometry']>,
+  legType: LegOutlineSpec['travel'] extends never ? never : 'upwind' | 'offset' | 'downwind' | 'finish',
+  point: Point,
+): number {
+  if (samePoint(point, geometry.startLine)) return legType === 'finish' ? -START_LINE_HALF_WIDTH : START_LINE_HALF_WIDTH;
+  if (samePoint(point, geometry.leewardGate)) return legType === 'downwind' ? -GATE_HALF_WIDTH : GATE_HALF_WIDTH;
+  return 0;
+}
 
-      specs.push({
-        id: `upwind-${lap + 1}`,
-        start: geometry.leewardGate,
-        end: geometry.windwardMark,
-        startHalfWidth: GATE_HALF_WIDTH,
-        endHalfWidth: 0,
-        angleDeg: upwindAngle,
-        travel: 'up',
-        fillCut: 'axis',
-      });
-    } else {
-      specs.push({
-        id: 'finish',
-        start: geometry.offsetMark,
-        end: geometry.startLine,
-        startHalfWidth: 0,
-        endHalfWidth: -START_LINE_HALF_WIDTH,
-        angleDeg: downwindAngle,
-        travel: 'down',
-        fillCut: 'horizontal',
-      });
-    }
-  }
-
-  return specs;
+function samePoint(a: Point, b: Point): boolean {
+  return Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6;
 }
 
 function drawLegOutline(

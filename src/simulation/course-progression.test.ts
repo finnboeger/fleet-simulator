@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildCourseGeometry } from './course.js';
+import { buildCourseGeometry, buildFleetCourseLegs } from './course.js';
 import { computeLegSideLimits, fleetRaceStartSeconds, trackDurationSeconds } from './progression.js';
 import type { CourseLeg, RaceConfig } from './types.js';
 
 const DEFAULT_CONFIG: RaceConfig = {
   beatLengthNm: 1,
+  hasAlternateTopMark: false,
+  alternateBeatLengthNm: 0.8,
   laps: 1,
   offsetMeters: 80,
   startToGateMeters: 150,
@@ -25,6 +27,7 @@ describe('buildCourseGeometry', () => {
     const geometry = buildCourseGeometry(DEFAULT_CONFIG);
 
     expect(geometry.windwardMark.y).toBe(150 + 1852);
+    expect(geometry.alternateWindwardMark.y).toBe(150 + 0.8 * 1852);
     expect(geometry.offsetMark.x).toBeLessThan(0);
     expect(geometry.legs.map((leg) => leg.type)).toEqual(['upwind', 'offset', 'finish']);
     expect(geometry.legs[0].start).toEqual(geometry.startLine);
@@ -37,6 +40,15 @@ describe('buildCourseGeometry', () => {
     expect(upwindLegs).toHaveLength(2);
     expect(upwindLegs[0].start).toEqual(geometry.startLine);
     expect(upwindLegs[1].start).toEqual(geometry.leewardGate);
+  });
+
+  it('builds an alternate top-mark course without an offset leg', () => {
+    const geometry = buildCourseGeometry({ ...DEFAULT_CONFIG, laps: 2 });
+    const legs = buildFleetCourseLegs(geometry, 2, true);
+
+    expect(legs.map((leg) => leg.type)).toEqual(['upwind', 'downwind', 'upwind', 'finish']);
+    expect(legs[0].end).toEqual(geometry.alternateWindwardMark);
+    expect(legs[1].start).toEqual(geometry.alternateWindwardMark);
   });
 });
 
