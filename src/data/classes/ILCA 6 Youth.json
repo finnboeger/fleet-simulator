@@ -1,0 +1,98 @@
+{
+  "speeds": {
+    "5..8": {
+      "upwind": {
+        "knot": 2.857
+      },
+      "downwind": {
+        "knot": 3.529
+      },
+      "reach": {
+        "knot": 4.0
+      }
+    },
+    "8..12": {
+      "upwind": {
+        "knot": 3.333
+      },
+      "downwind": {
+        "knot": 4.8
+      },
+      "reach": {
+        "knot": 6.0
+      }
+    },
+    "12..15": {
+      "upwind": {
+        "knot": 3.636
+      },
+      "downwind": {
+        "knot": 6.316
+      },
+      "reach": {
+        "knot": 10.0
+      }
+    },
+    "15..18": {
+      "upwind": {
+        "knot": 3.529
+      },
+      "downwind": {
+        "knot": 8.571
+      },
+      "reach": {
+        "knot": 10.909
+      }
+    }
+  },
+  "hull": {
+    "type": "Mono",
+    "appendage": "Daggerboard",
+    "length": {
+      "meter": 4.24
+    },
+    "beam": {
+      "meter": 1.39
+    },
+    "waterline": {
+      "meter": 3.81
+    },
+    "draft": {
+      "meter": 0.787
+    },
+    "weight": {
+      "kilogram": 58.97
+    }
+  },
+  "rig": {
+    "type": "U",
+    "mainsailArea": {
+      "square-meter": 5.76
+    },
+    "mastLength": {
+      "meter": 0.0
+    }
+  },
+  "crew": {
+    "helm": {
+      "required": true,
+      "trapeze": false
+    }
+  },
+  "widths": {
+    "startMultiplier": 1.5,
+    "gateMultiplier": 10.0,
+    "finishWidth": {
+      "meter": 50.0
+    }
+  },
+  "flag": {
+    "name": "ILCA 6 Youth",
+    "background": "00FF00",
+    "background2": "404040",
+    "backgroundCombination": "Single",
+    "logo": "ILCA",
+    "foreground": "FF0000",
+    "custom": true
+  }
+}

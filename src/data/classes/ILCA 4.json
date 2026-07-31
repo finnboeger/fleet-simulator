@@ -1,0 +1,102 @@
+{
+  "speeds": {
+    "5..8": {
+      "upwind": {
+        "knot": 2.667
+      },
+      "downwind": {
+        "knot": 3.333
+      },
+      "reach": {
+        "knot": 3.75
+      }
+    },
+    "8..12": {
+      "upwind": {
+        "knot": 3.158
+      },
+      "downwind": {
+        "knot": 4.444
+      },
+      "reach": {
+        "knot": 5.455
+      }
+    },
+    "12..15": {
+      "upwind": {
+        "knot": 3.333
+      },
+      "downwind": {
+        "knot": 6.0
+      },
+      "reach": {
+        "knot": 9.231
+      }
+    },
+    "15..18": {
+      "upwind": {
+        "knot": 3.243
+      },
+      "downwind": {
+        "knot": 7.5
+      },
+      "reach": {
+        "knot": 10.0
+      }
+    }
+  },
+  "hull": {
+    "type": "Mono",
+    "appendage": "Daggerboard",
+    "length": {
+      "meter": 4.24
+    },
+    "beam": {
+      "meter": 1.39
+    },
+    "waterline": {
+      "meter": 3.81
+    },
+    "draft": {
+      "meter": 0.787
+    },
+    "weight": {
+      "kilogram": 58.97
+    }
+  },
+  "rig": {
+    "type": "Unknown",
+    "mainsailArea": {
+      "square-meter": 4.7
+    },
+    "mastLength": {
+      "meter": 0.0
+    },
+    "spinnakerType": "Unknown"
+  },
+  "crew": {
+    "helm": {
+      "required": true,
+      "trapeze": false
+    }
+  },
+  "ratings": {
+    "portsmouthNumber": 1210
+  },
+  "widths": {
+    "startMultiplier": 1.5,
+    "gateMultiplier": 10.0,
+    "finishWidth": {
+      "meter": 50.0
+    }
+  },
+  "flag": {
+    "name": "ILCA 4",
+    "background": "FFFF00",
+    "background2": "404040",
+    "backgroundCombination": "Single",
+    "logo": "ILCA",
+    "foreground": "FF0000",
+    "custom": true
+  }
+}

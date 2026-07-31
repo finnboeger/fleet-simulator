@@ -1,0 +1,115 @@
+{
+  "speeds": {
+    "5..8": {
+      "upwind": {
+        "knot": 2.857
+      },
+      "downwind": {
+        "knot": 3.333
+      },
+      "reach": {
+        "knot": 4.615
+      }
+    },
+    "8..12": {
+      "upwind": {
+        "knot": 3.529
+      },
+      "downwind": {
+        "knot": 5.0
+      },
+      "reach": {
+        "knot": 6.667
+      }
+    },
+    "12..15": {
+      "upwind": {
+        "knot": 4.286
+      },
+      "downwind": {
+        "knot": 7.059
+      },
+      "reach": {
+        "knot": 10.0
+      }
+    },
+    "15..18": {
+      "upwind": {
+        "knot": 4.444
+      },
+      "downwind": {
+        "knot": 8.571
+      },
+      "reach": {
+        "knot": 12.0
+      }
+    }
+  },
+  "hull": {
+    "type": "Mono",
+    "appendage": "Unknown",
+    "length": {
+      "meter": 4.2
+    },
+    "beam": {
+      "meter": 1.63
+    },
+    "draft": {
+      "meter": 0.965
+    },
+    "weight": {
+      "kilogram": 80.0
+    }
+  },
+  "rig": {
+    "type": "Unknown",
+    "mainsailArea": {
+      "square-meter": 7.45
+    },
+    "mastLength": {
+      "meter": 6.26
+    },
+    "headsailArea": {
+      "square-meter": 2.8
+    },
+    "spinnakerArea": {
+      "square-meter": 8.83
+    },
+    "spinnakerType": "Unknown"
+  },
+  "crew": {
+    "helm": {
+      "required": true,
+      "trapeze": false
+    },
+    "crew1": {
+      "required": true,
+      "trapeze": true
+    }
+  },
+  "ratings": {
+    "portsmouthNumber": 1100
+  },
+  "widths": {
+    "startMultiplier": 1.5,
+    "gateMultiplier": 10.0,
+    "finishWidth": {
+      "meter": 50.0
+    }
+  },
+  "flag": {
+    "name": "420",
+    "background": "F7F7F7",
+    "background2": "404040",
+    "backgroundCombination": "Single",
+    "logo": "420",
+    "custom": true
+  },
+  "other": {
+    "rule42": {
+      "minimumWindSpeed": {
+        "knot": 13.0
+      }
+    }
+  }
+}

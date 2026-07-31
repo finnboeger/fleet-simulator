@@ -1,0 +1,110 @@
+{
+  "speeds": {
+    "5..8": {
+      "upwind": {
+        "knot": 3.0
+      },
+      "downwind": {
+        "knot": 5.0
+      },
+      "reach": {
+        "knot": 7.5
+      }
+    },
+    "8..12": {
+      "upwind": {
+        "knot": 4.0
+      },
+      "downwind": {
+        "knot": 8.0
+      },
+      "reach": {
+        "knot": 12.0
+      }
+    },
+    "12..15": {
+      "upwind": {
+        "knot": 4.8
+      },
+      "downwind": {
+        "knot": 10.0
+      },
+      "reach": {
+        "knot": 15.0
+      }
+    },
+    "15..18": {
+      "upwind": {
+        "knot": 5.0
+      },
+      "downwind": {
+        "knot": 10.909
+      },
+      "reach": {
+        "knot": 15.0
+      }
+    }
+  },
+  "hull": {
+    "type": "Mono",
+    "appendage": "Unknown",
+    "length": {
+      "meter": 4.4
+    },
+    "beam": {
+      "meter": 1.7
+    },
+    "weight": {
+      "kilogram": 74.0
+    }
+  },
+  "rig": {
+    "type": "Unknown",
+    "mainsailArea": {
+      "square-meter": 0.0
+    },
+    "mastLength": {
+      "meter": 0.0
+    },
+    "spinnakerArea": {
+      "square-meter": 16.83
+    },
+    "spinnakerType": "Unknown"
+  },
+  "crew": {
+    "helm": {
+      "required": true,
+      "trapeze": false
+    },
+    "crew1": {
+      "required": true,
+      "trapeze": true
+    }
+  },
+  "ratings": {
+    "portsmouthNumber": 897
+  },
+  "widths": {
+    "startMultiplier": 1.6,
+    "gateMultiplier": 13.6,
+    "finishWidth": {
+      "meter": 50.0
+    }
+  },
+  "flag": {
+    "name": "29er",
+    "background": "F7F7F7",
+    "background2": "404040",
+    "backgroundCombination": "Single",
+    "logo": "29er",
+    "foreground": "FF0000",
+    "custom": true
+  },
+  "other": {
+    "rule42": {
+      "minimumWindSpeed": {
+        "knot": 10.0
+      }
+    }
+  }
+}
