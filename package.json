@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "lint": "oxlint",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "start": "npm run build && concurrently -n build,preview \"vite build --watch\" \"vite preview --host\""
   },
   "dependencies": {
     "pixi.js": "^8.19.0",
@@ -28,6 +29,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
+    "concurrently": "^10.0.4",
     "jsdom": "^30.0.1",
     "oxlint": "^1.71.0",
     "typescript": "~6.0.2",
