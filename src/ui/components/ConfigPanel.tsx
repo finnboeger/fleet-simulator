@@ -16,6 +16,16 @@ export function ConfigPanel() {
     moveFleet(fromIndex, toIndex);
   };
 
+  const updateBeatLengthAndRefresh = (updates: Partial<Pick<typeof config, 'beatLengthNm' | 'alternateBeatLengthNm'>>) => {
+    updateConfig(updates);
+    refreshSimulation();
+  };
+
+  const autoCalculateAndRefresh = () => {
+    autoCalculateBeatLengths();
+    refreshSimulation();
+  };
+
   return (
     <aside className="config-panel">
       <section className="config-section">
@@ -29,7 +39,7 @@ export function ConfigPanel() {
               max={10}
               step={0.01}
               value={config.beatLengthNm}
-              onChange={(e) => updateConfig({ beatLengthNm: Number(e.target.value) })}
+              onChange={(e) => updateBeatLengthAndRefresh({ beatLengthNm: Number(e.target.value) })}
             />
             <span className="unit">nm</span>
           </span>
@@ -44,7 +54,7 @@ export function ConfigPanel() {
                 max={10}
                 step={0.01}
                 value={config.alternateBeatLengthNm}
-                onChange={(e) => updateConfig({ alternateBeatLengthNm: Number(e.target.value) })}
+                onChange={(e) => updateBeatLengthAndRefresh({ alternateBeatLengthNm: Number(e.target.value) })}
               />
               <span className="unit">nm</span>
             </span>
@@ -169,7 +179,7 @@ export function ConfigPanel() {
       </section>
 
       <section className="config-actions">
-        <button onClick={autoCalculateBeatLengths}>Auto-calculate beat lengths</button>
+        <button onClick={autoCalculateAndRefresh}>Auto-calculate beat lengths</button>
         <button className="primary" onClick={refreshSimulation}>
           Run Simulation
         </button>
