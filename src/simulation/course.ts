@@ -1,4 +1,7 @@
+import { START_LINE_HALF_WIDTH } from '../visualization/Scene.js';
 import type { CourseGeometry, CourseLeg, LegType, Point, RaceConfig } from './types.js';
+
+const REACHING_FINISH_OFFSET_Y_METERS = 50;
 
 /**
  * Wind direction is fixed upward in the viewport (negative-Y axis).
@@ -30,9 +33,18 @@ function legLength(a: Point, b: Point): number {
  *   windwardMark (0, startToGate + beatLength)
  *   alternateWindwardMark (0, startToGate + alternateBeatLength)
  *   offsetMark  (-offsetMeters, startToGate + beatLength)
+ *   reachingFinishMark (startLineRightMark.x, startLineRightMark.y + 50)
  */
 export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
-  const { beatLengthNm, hasAlternateTopMark, alternateBeatLengthNm, laps, offsetMeters, startToGateMeters } = config;
+  const {
+    beatLengthNm,
+    hasAlternateTopMark,
+    hasReachingFinish,
+    alternateBeatLengthNm,
+    laps,
+    offsetMeters,
+    startToGateMeters,
+  } = config;
   const beatLengthMeters = beatLengthNm * 1852;
   const alternateBeatLengthMeters = alternateBeatLengthNm * 1852;
 
@@ -41,28 +53,33 @@ export function buildCourseGeometry(config: RaceConfig): CourseGeometry {
   const windwardMark = pt(0, startToGateMeters + beatLengthMeters);
   const alternateWindwardMark = pt(0, startToGateMeters + alternateBeatLengthMeters);
   const offsetMark = pt(-offsetMeters, startToGateMeters + beatLengthMeters);
+  const reachingFinishMark = pt(START_LINE_HALF_WIDTH, startLine.y + REACHING_FINISH_OFFSET_Y_METERS);
 
   const legs = buildFleetCourseLegs(
-    { startLine, leewardGate, windwardMark, alternateWindwardMark, offsetMark },
+    { startLine, leewardGate, windwardMark, alternateWindwardMark, offsetMark, reachingFinishMark },
     laps,
     false,
+    hasReachingFinish,
   );
 
   return {
     legs,
     hasAlternateTopMark,
+    hasReachingFinish,
     startLine,
     leewardGate,
     windwardMark,
     alternateWindwardMark,
     offsetMark,
+    reachingFinishMark,
   };
 }
 
 export function buildFleetCourseLegs(
-  marks: Pick<CourseGeometry, 'startLine' | 'leewardGate' | 'windwardMark' | 'alternateWindwardMark' | 'offsetMark'>,
+  marks: Pick<CourseGeometry, 'startLine' | 'leewardGate' | 'windwardMark' | 'alternateWindwardMark' | 'offsetMark' | 'reachingFinishMark'>,
   laps: number,
   useAlternateTopMark: boolean,
+  hasReachingFinish: boolean,
 ): CourseLeg[] {
   const topMark = useAlternateTopMark ? marks.alternateWindwardMark : marks.windwardMark;
 
@@ -81,7 +98,12 @@ export function buildFleetCourseLegs(
 
     if (useAlternateTopMark) {
       if (isLastLap) {
-        addLeg('finish', topMark, marks.startLine);
+        if (hasReachingFinish) {
+          addLeg('downwind', topMark, marks.leewardGate);
+          addLeg('finish', marks.leewardGate, marks.reachingFinishMark);
+        } else {
+          addLeg('finish', topMark, marks.startLine);
+        }
       } else {
         addLeg('downwind', topMark, marks.leewardGate);
       }
@@ -92,8 +114,13 @@ export function buildFleetCourseLegs(
     addLeg('offset', marks.windwardMark, marks.offsetMark);
 
     if (isLastLap) {
-      // Final downwind directly to finish (start line used as finish)
-      addLeg('finish', marks.offsetMark, marks.startLine);
+      if (hasReachingFinish) {
+        addLeg('downwind', marks.offsetMark, marks.leewardGate);
+        addLeg('finish', marks.leewardGate, marks.reachingFinishMark);
+      } else {
+        // Final downwind directly to finish (start line used as finish)
+        addLeg('finish', marks.offsetMark, marks.startLine);
+      }
     } else {
       // Regular downwind back to leeward gate
       addLeg('downwind', marks.offsetMark, marks.leewardGate);

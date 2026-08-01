@@ -6,6 +6,7 @@ import type { CourseLeg, RaceConfig } from './types.js';
 const DEFAULT_CONFIG: RaceConfig = {
   beatLengthNm: 1,
   hasAlternateTopMark: false,
+  hasReachingFinish: false,
   alternateBeatLengthNm: 0.8,
   laps: 1,
   offsetMeters: 80,
@@ -44,11 +45,32 @@ describe('buildCourseGeometry', () => {
 
   it('builds an alternate top-mark course without an offset leg', () => {
     const geometry = buildCourseGeometry({ ...DEFAULT_CONFIG, laps: 2 });
-    const legs = buildFleetCourseLegs(geometry, 2, true);
+    const legs = buildFleetCourseLegs(geometry, 2, true, false);
 
     expect(legs.map((leg) => leg.type)).toEqual(['upwind', 'downwind', 'upwind', 'finish']);
     expect(legs[0].end).toEqual(geometry.alternateWindwardMark);
     expect(legs[1].start).toEqual(geometry.alternateWindwardMark);
+  });
+
+  it('adds a reaching-finish mark and routes the final lap via the gate', () => {
+    const geometry = buildCourseGeometry({ ...DEFAULT_CONFIG, hasReachingFinish: true, laps: 1 });
+
+    expect(geometry.reachingFinishMark.x).toBe(150);
+    expect(geometry.reachingFinishMark.y).toBe(50);
+    expect(geometry.legs.map((leg) => leg.type)).toEqual(['upwind', 'offset', 'downwind', 'finish']);
+    expect(geometry.legs[2].end).toEqual(geometry.leewardGate);
+    expect(geometry.legs[3].start).toEqual(geometry.leewardGate);
+    expect(geometry.legs[3].end).toEqual(geometry.reachingFinishMark);
+  });
+
+  it('builds alternate top-mark + reaching-finish as LRA', () => {
+    const geometry = buildCourseGeometry({ ...DEFAULT_CONFIG, laps: 2, hasReachingFinish: true });
+    const legs = buildFleetCourseLegs(geometry, 2, true, true);
+
+    expect(legs.map((leg) => leg.type)).toEqual(['upwind', 'downwind', 'upwind', 'downwind', 'finish']);
+    expect(legs[3].end).toEqual(geometry.leewardGate);
+    expect(legs[4].start).toEqual(geometry.leewardGate);
+    expect(legs[4].end).toEqual(geometry.reachingFinishMark);
   });
 });
 

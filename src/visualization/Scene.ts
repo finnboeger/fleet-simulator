@@ -160,6 +160,16 @@ export class Scene {
       ctx.fillText('W2', swm.x, swm.y - 14);
     }
 
+    if (geometry.hasReachingFinish) {
+      const rfm = s(geometry.reachingFinishMark);
+      ctx.beginPath();
+      ctx.arc(rfm.x, rfm.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#15803d';
+      ctx.fill();
+      ctx.fillStyle = '#555555';
+      ctx.fillText('RF', rfm.x, rfm.y - 12);
+    }
+
     // Offset mark
     const om = s(geometry.offsetMark);
     ctx.beginPath();

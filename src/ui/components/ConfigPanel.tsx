@@ -115,6 +115,14 @@ export function ConfigPanel() {
             onChange={(e) => updateConfig({ showOutline: e.target.checked })}
           />
         </label>
+        <label>
+          Reaching finish (LR/LRA)
+          <input
+            type="checkbox"
+            checked={config.hasReachingFinish}
+            onChange={(e) => updateConfig({ hasReachingFinish: e.target.checked })}
+          />
+        </label>
       </section>
 
       <section className="config-section">

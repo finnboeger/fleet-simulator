@@ -63,6 +63,8 @@ export interface RaceConfig {
   beatLengthNm: number;
   /** Whether the alternate windward mark is enabled and shown. */
   hasAlternateTopMark: boolean;
+  /** Whether the course uses a reaching finish (LR / LRA). */
+  hasReachingFinish: boolean;
   /** Alternate beat length in nautical miles for the alternate windward mark. */
   alternateBeatLengthNm: number;
   /** Number of laps (each lap = 1 upwind + 1 downwind). */
@@ -104,11 +106,13 @@ export interface CourseLeg {
 export interface CourseGeometry {
   legs: CourseLeg[];
   hasAlternateTopMark: boolean;
+  hasReachingFinish: boolean;
   startLine: Point;
   leewardGate: Point;
   windwardMark: Point;
   alternateWindwardMark: Point;
   offsetMark: Point;
+  reachingFinishMark: Point;
 }
 
 // ─── Simulation output ────────────────────────────────────────────────────

@@ -33,6 +33,7 @@ function compute(
       geometry,
       lapCount,
       config.hasAlternateTopMark && fleet.useAlternateTopMark,
+      config.hasReachingFinish,
     );
     return { fleet, perf, legs };
   });

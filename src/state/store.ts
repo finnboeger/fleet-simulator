@@ -29,6 +29,7 @@ const DEFAULT_CLASS =
 const DEFAULT_CONFIG: RaceConfig = {
   beatLengthNm: 1000 / 1852,
   hasAlternateTopMark: false,
+  hasReachingFinish: false,
   alternateBeatLengthNm: (1000 / 1852) * 0.85,
   laps: 2,
   offsetMeters: 80,
@@ -159,7 +160,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'fleet-position-v1',
-      version: 6,
+      version: 7,
       migrate: (persistedState: unknown) => {
         const state = persistedState as { config?: Record<string, unknown> } | undefined;
         const config = state?.config;
@@ -167,6 +168,10 @@ export const useAppStore = create<AppState>()(
 
         if (!('hasAlternateTopMark' in config)) {
           config.hasAlternateTopMark = false;
+        }
+
+        if (!('hasReachingFinish' in config)) {
+          config.hasReachingFinish = DEFAULT_CONFIG.hasReachingFinish;
         }
 
         if ('secondaryBeatLengthNm' in config && !('alternateBeatLengthNm' in config)) {

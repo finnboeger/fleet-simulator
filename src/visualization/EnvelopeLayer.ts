@@ -20,6 +20,7 @@ type LegOutlineSpec = {
   angleDeg: number;
   travel: 'up' | 'down';
   fillCut: 'axis' | 'horizontal';
+  outlineVertices?: Point[];
 };
 
 export class EnvelopeLayer {
@@ -88,16 +89,56 @@ function buildLegSpecs(
   upwindAngle: number,
   downwindAngle: number,
 ): LegOutlineSpec[] {
-  return legs.map((leg, index) => ({
-    id: `${leg.type}-${index}`,
-    start: leg.start,
-    end: leg.end,
-    startHalfWidth: anchorHalfWidth(geometry, leg.start),
-    endHalfWidth: endAnchorHalfWidth(geometry, leg.type, leg.end),
-    angleDeg: leg.type === 'upwind' ? upwindAngle : leg.type === 'offset' ? 75 : downwindAngle,
-    travel: leg.type === 'upwind' ? 'up' : 'down',
-    fillCut: leg.type === 'downwind' || leg.type === 'finish' ? 'horizontal' : 'axis',
-  }));
+  return legs.map((leg, index) => {
+    const outlineVertices = reachingFinishOutlineVertices(geometry, leg);
+    const spec: LegOutlineSpec = {
+      id: `${leg.type}-${index}`,
+      start: leg.start,
+      end: leg.end,
+      startHalfWidth: anchorHalfWidth(geometry, leg.start),
+      endHalfWidth: endAnchorHalfWidth(geometry, leg.type, leg.end),
+      angleDeg: leg.type === 'upwind' ? upwindAngle : leg.type === 'offset' ? 75 : downwindAngle,
+      travel: leg.type === 'upwind' ? 'up' : 'down',
+      fillCut: isReachingFinishLeg(geometry, leg)
+        ? 'axis'
+        : leg.type === 'downwind' || leg.type === 'finish'
+          ? 'horizontal'
+          : 'axis',
+    };
+
+    if (outlineVertices) {
+      spec.outlineVertices = outlineVertices;
+    }
+
+    return spec;
+  });
+}
+
+function isReachingFinishLeg(
+  geometry: NonNullable<Scene['geometry']>,
+  leg: FleetEnvelope['legs'][number],
+): boolean {
+  return (
+    geometry.hasReachingFinish &&
+    leg.type === 'finish' &&
+    samePoint(leg.start, geometry.leewardGate) &&
+    samePoint(leg.end, geometry.reachingFinishMark)
+  );
+}
+
+function reachingFinishOutlineVertices(
+  geometry: NonNullable<Scene['geometry']>,
+  leg: FleetEnvelope['legs'][number],
+): Point[] | undefined {
+  if (!isReachingFinishLeg(geometry, leg)) return undefined;
+
+  const leftGate = { x: -GATE_HALF_WIDTH, y: geometry.leewardGate.y };
+  const rightGate = { x: GATE_HALF_WIDTH, y: geometry.leewardGate.y };
+  const rightStart = { x: START_LINE_HALF_WIDTH, y: geometry.startLine.y };
+
+  // Requested reaching-finish boundaries:
+  // left gate -> right start, right gate -> reaching finish mark.
+  return [leftGate, rightGate, geometry.reachingFinishMark, rightStart];
 }
 
 function anchorHalfWidth(geometry: NonNullable<Scene['geometry']>, point: Point): number {
@@ -136,6 +177,10 @@ function drawLegOutline(
 }
 
 function buildLegOutlinePolygon(scene: Scene, spec: LegOutlineSpec): Point[] {
+  if (spec.outlineVertices) {
+    return spec.outlineVertices.map((vertex) => scene.simToScreen(vertex));
+  }
+
   const startCenter = scene.simToScreen(spec.start);
   const endCenter = scene.simToScreen(spec.end);
   const scale = scene.transform.scale;
@@ -208,8 +253,18 @@ function fillLegProgressBand(
     if (axisLen < 1e-6) return;
 
     const axisUnit = scale(axis, 1 / axisLen);
-    const minS = clamp01(followerProgress) * axisLen;
-    const maxS = clamp01(leaderProgress) * axisLen;
+    // Map progress onto the polygon's projected extent along the leg axis.
+    // This ensures slanted or asymmetric leg outlines can be fully filled.
+    let polyMinS = Number.POSITIVE_INFINITY;
+    let polyMaxS = Number.NEGATIVE_INFINITY;
+    for (const vertex of polygon) {
+      const s = dot(sub(vertex, start), axisUnit);
+      if (s < polyMinS) polyMinS = s;
+      if (s > polyMaxS) polyMaxS = s;
+    }
+
+    const minS = polyMinS + clamp01(followerProgress) * (polyMaxS - polyMinS);
+    const maxS = polyMinS + clamp01(leaderProgress) * (polyMaxS - polyMinS);
     if (maxS - minS <= 1e-4) return;
 
     clipped = clipPolygonByMinS(polygon, start, axisUnit, minS);
