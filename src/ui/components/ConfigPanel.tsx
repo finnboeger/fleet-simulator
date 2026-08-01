@@ -4,7 +4,7 @@ import { useAppStore, AVAILABLE_CLASSES } from '../../state/store.js';
 
 export function ConfigPanel() {
   const config = useAppStore((s) => s.config);
-  const { clearFleetCustomLaps, updateConfig, addFleet, moveFleet, removeFleet, updateFleet, refreshSimulation, resetToDefault } =
+  const { clearFleetCustomLaps, clearFleetTargetTime, updateConfig, addFleet, moveFleet, removeFleet, updateFleet, autoCalculateBeatLengths, refreshSimulation, resetToDefault } =
     useAppStore();
   const [draggedFleetId, setDraggedFleetId] = useState<string | null>(null);
   const [dragOverFleetId, setDragOverFleetId] = useState<string | null>(null);
@@ -158,6 +158,7 @@ export function ConfigPanel() {
             }}
             showAlternateTopMark={config.hasAlternateTopMark}
             onClearCustomLaps={() => clearFleetCustomLaps(fleet.id)}
+            onClearTargetTime={() => clearFleetTargetTime(fleet.id)}
             onUpdate={(u) => updateFleet(fleet.id, u)}
             onRemove={() => removeFleet(fleet.id)}
           />
@@ -168,6 +169,7 @@ export function ConfigPanel() {
       </section>
 
       <section className="config-actions">
+        <button onClick={autoCalculateBeatLengths}>Auto-calculate beat lengths</button>
         <button className="primary" onClick={refreshSimulation}>
           Run Simulation
         </button>
@@ -188,6 +190,7 @@ function FleetRow({
   onDrop,
   showAlternateTopMark,
   onClearCustomLaps,
+  onClearTargetTime,
   onUpdate,
   onRemove,
 }: {
@@ -201,6 +204,7 @@ function FleetRow({
   onDrop: (e: DragEvent<HTMLDivElement>) => void;
   showAlternateTopMark: boolean;
   onClearCustomLaps: () => void;
+  onClearTargetTime: () => void;
   onUpdate: (u: Partial<FleetConfig>) => void;
   onRemove: () => void;
 }) {
@@ -264,6 +268,27 @@ function FleetRow({
               onChange={(e) =>
                 onUpdate({ additionalDelayMinutes: Math.max(0, Math.round(Number(e.target.value))) })
               }
+            />
+            <span className="unit">min</span>
+          </span>
+        </label>
+        <label>
+          Target time
+          <span className="input-row">
+            <input
+              type="number"
+              min={1}
+              max={600}
+              step={1}
+              value={fleet.targetTimeMinutes ?? ''}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (e.target.value === '' || !Number.isFinite(value) || value <= 0) {
+                  onClearTargetTime();
+                  return;
+                }
+                onUpdate({ targetTimeMinutes: Math.round(value) });
+              }}
             />
             <span className="unit">min</span>
           </span>

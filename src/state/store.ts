@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { FleetConfig, RaceConfig, SimulationOutput } from '../simulation/types.js';
 import { runSimulation as _runSimulation } from '../simulation/engine.js';
 import { loadAllClasses, getAvailableClassNames } from '../simulation/class-loader.js';
+import { autoCalculateBeatLengths } from '../simulation/beat-length.js';
 
 // Loaded once at module initialisation from bundled JSON files
 export const classPerformances = loadAllClasses();
@@ -56,6 +57,8 @@ interface AppState {
   removeFleet: (id: string) => void;
   updateFleet: (id: string, updates: Partial<FleetConfig>) => void;
   clearFleetCustomLaps: (id: string) => void;
+  clearFleetTargetTime: (id: string) => void;
+  autoCalculateBeatLengths: () => void;
   refreshSimulation: () => void;
   setPlaying: (playing: boolean) => void;
   setSpeedMultiplier: (speed: number) => void;
@@ -130,6 +133,24 @@ export const useAppStore = create<AppState>()(
           },
         })),
 
+      clearFleetTargetTime: (id) =>
+        set((s) => ({
+          config: {
+            ...s.config,
+            fleets: s.config.fleets.map((f) => {
+              if (f.id !== id) return f;
+              const { targetTimeMinutes: _targetTimeMinutes, ...rest } = f;
+              return rest;
+            }),
+          },
+        })),
+
+      autoCalculateBeatLengths: () =>
+        set((s) => {
+          const lengths = autoCalculateBeatLengths(s.config, classPerformances);
+          return { config: { ...s.config, ...lengths } };
+        }),
+
       refreshSimulation: () => {
         const { config } = get();
         if (config.fleets.length === 0) { set({ simulation: null }); return; }
@@ -160,7 +181,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'fleet-position-v1',
-      version: 7,
+      version: 8,
       migrate: (persistedState: unknown) => {
         const state = persistedState as { config?: Record<string, unknown> } | undefined;
         const config = state?.config;
@@ -204,6 +225,10 @@ export const useAppStore = create<AppState>()(
           if ('startDelayMinutes' in fleet && !('additionalDelayMinutes' in fleet)) {
             fleet.additionalDelayMinutes = Number(fleet.startDelayMinutes) || 0;
             delete fleet.startDelayMinutes;
+          }
+          if ('targettime' in fleet && !('targetTimeMinutes' in fleet)) {
+            fleet.targetTimeMinutes = Number(fleet.targettime) || undefined;
+            delete fleet.targettime;
           }
         }
 

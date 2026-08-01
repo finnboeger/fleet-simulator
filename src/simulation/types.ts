@@ -54,6 +54,8 @@ export interface FleetConfig {
   bulkSlowdownFraction?: number;
   /** Extra delay in whole minutes beyond the fixed 5-minute start sequence. */
   additionalDelayMinutes: number;
+  /** Optional target race duration for this fleet in minutes. */
+  targetTimeMinutes?: number;
   /** CSS hex colour for this fleet's envelope (e.g. "#ff6600"). */
   color: string;
 }
