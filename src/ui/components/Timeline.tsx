@@ -18,6 +18,31 @@ function fmtDurationMinSec(sec: number): string {
 
 const SPEEDS = [30, 60, 120, 180, 240];
 
+function isTextInputTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    target.isContentEditable ||
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT'
+  );
+}
+
+function nextSpeed(current: number): number {
+  for (const speed of SPEEDS) {
+    if (speed > current) return speed;
+  }
+  return SPEEDS[SPEEDS.length - 1];
+}
+
+function previousSpeed(current: number): number {
+  for (let i = SPEEDS.length - 1; i >= 0; i--) {
+    if (SPEEDS[i] < current) return SPEEDS[i];
+  }
+  return SPEEDS[0];
+}
+
 export function Timeline() {
   const simulation = useAppStore((s) => s.simulation);
   const config = useAppStore((s) => s.config);
@@ -63,6 +88,38 @@ export function Timeline() {
     rafId = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(rafId);
   }, [isPlaying, simulation, setCurrentTime, setPlaying]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (isTextInputTarget(event.target)) return;
+      if (!useAppStore.getState().simulation) return;
+
+      if (event.code === 'Space') {
+        event.preventDefault();
+        const { playback } = useAppStore.getState();
+        setPlaying(!playback.isPlaying);
+        return;
+      }
+
+      const isIncrease = event.key === '+' || event.key === '=' || event.code === 'NumpadAdd';
+      if (isIncrease) {
+        event.preventDefault();
+        const { playback } = useAppStore.getState();
+        setSpeedMultiplier(nextSpeed(playback.speedMultiplier));
+        return;
+      }
+
+      const isDecrease = event.key === '-' || event.key === '_' || event.code === 'NumpadSubtract';
+      if (isDecrease) {
+        event.preventDefault();
+        const { playback } = useAppStore.getState();
+        setSpeedMultiplier(previousSpeed(playback.speedMultiplier));
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [setPlaying, setSpeedMultiplier]);
 
   const timelineStart = simulation?.timelineStartSeconds ?? 0;
   const timelineEnd = simulation?.durationSeconds ?? 0;
